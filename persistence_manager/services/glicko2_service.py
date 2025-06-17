@@ -24,7 +24,7 @@ class Glicko2(object):
         self.tau = tau
         self.epsilon = epsilon
         
-    def create_from_db(self, name):
+    def create_from_db(self, name) -> Rating:
         player = Player.objects.get(name=name)
         name = player.name
         rating = player.rating
@@ -33,7 +33,7 @@ class Glicko2(object):
         
         return self.create_rating(name=name, rating=rating, rd=rd, sigma=sigma)
     
-    def bulk_create_from_db(self, *args):
+    def bulk_create_from_db(self, *args) -> tuple[Rating]:
         ratings = []
         for name in args:
             player = Player.objects.get(name=name)
@@ -45,14 +45,14 @@ class Glicko2(object):
         
         return tuple(ratings)
     
-    def dump_to_database(self, rating: Rating):
+    def dump_to_database(self, rating: Rating) -> None:
         p = Player.objects.get(name=rating.name)
         p.rating = rating.rating
         p.rd = rating.rd
         p.sigma = rating.sigma
         p.save()
         
-    def bulk_dump_to_database(self, ratings):
+    def bulk_dump_to_database(self, ratings: list[Rating] | tuple[Rating]) -> None:
         with transaction.atomic():
             for rating in ratings:
                 p = Player.objects.get(name=rating.name)
@@ -61,23 +61,21 @@ class Glicko2(object):
                 p.sigma = rating.sigma
                 p.save()
 
-    def create_rating(self, name=None, rating=None, rd=None, sigma=None):
+    def create_rating(self, name: str, rating=None, rd=None, sigma=None) -> Rating:
         if rating is None:
             rating = self.rating
         if rd is None:
             rd = self.rd
         if sigma is None:
             sigma = self.sigma
-        if name is None:
-            return
         return Rating(name=name, rating=rating, rd=rd, sigma=sigma)
 
-    def scale_down(self, rating, ratio=173.7178):
+    def scale_down(self, rating: Rating, ratio: float=173.7178) -> Rating:
         r = (rating.rating - self.rating) / ratio
         rd = rating.rd / ratio
         return self.create_rating(rating.name, r, rd, rating.sigma)
 
-    def scale_up(self, rating, ratio=173.7178):
+    def scale_up(self, rating, ratio=173.7178) -> Rating:
         r = rating.rating * ratio + self.rating
         rd = rating.rd * ratio
         return self.create_rating(rating.name, r, rd, rating.sigma)
@@ -88,17 +86,17 @@ class Glicko2(object):
         """
         return 1. / math.sqrt(1 + (3 * rating.rd ** 2) / (math.pi ** 2))
 
-    def expect_score(self, rating, other_rating, impact):
+    def expect_score(self, rating: Rating, other_rating: Rating, impact):
         return 1. / (1 + math.exp(-impact * (rating.rating - other_rating.rating)))
 
-    def determine_sigma(self, rating, difference, variance):
+    def determine_sigma(self, rating: Rating, difference, variance) -> float:
         """Determines new sigma."""
         rd = rating.rd
         difference_squared = difference ** 2
         # 1. Let a = ln(s^2), and define f(x)
         alpha = math.log(rating.sigma ** 2)
 
-        def f(x):
+        def f(x) -> float:
             """This function is twice the conditional log-posterior density of
             rd, and is the optimality criterion.
             """
@@ -135,7 +133,7 @@ class Glicko2(object):
         # 5. Once |B-A| <= e, set s' <- e^(A/2)
         return math.exp(1) ** (a / 2)
 
-    def rate(self, rating, series):
+    def rate(self, rating: Rating, series) -> Rating:
         # Step 2. For each player, convert the rating and RD's onto the
         #         Glicko-2 scale.
         rating = self.scale_down(rating)
@@ -149,7 +147,7 @@ class Glicko2(object):
         if not series:
             # If the team didn't play in the series, do only Step 6
             rd_star = math.sqrt(rating.rd ** 2 + rating.sigma ** 2)
-            return self.scale_up(self.create_rating(rating.rating, rd_star, rating.sigma))
+            return self.scale_up(self.create_rating(rating.rating, rd_star, rating.sigma)) # type: ignore
         for actual_score, other_rating in series:
             other_rating = self.scale_down(other_rating)
             impact = self.reduce_impact(other_rating)
@@ -171,12 +169,43 @@ class Glicko2(object):
         return self.scale_up(self.create_rating(rating.name, r, rd, sigma))
 
     def rate_1vs1(self, name_p1, name_p2, drawn=False):
-        r1, r2 = self.bulk_create_from_db(name_p1, name_p2)
+        r1, r2 = self.bulk_create_from_db(name_p1, name_p2) # type: ignore
         self.bulk_dump_to_database((
             self.rate(r1, [(Player.DRAW if drawn else Player.WIN, r2)]),
             self.rate(r2, [(Player.DRAW if drawn else Player.LOSS, r1)])
-        ))
+        )) # type: ignore
         
+    def rate_1vs1_bo3(self, name_p1: str, name_p2: str, games: list, drawn: bool = False):
+        """A function that update the ratings of two players that play a 1v1 bo3 match.
+
+        Args:
+            name_p1 (str): the name of the winner player
+            name_p2 (str): the name of the looser player
+            games (list): a list with three values, one for each game. Te possible values are 1 (win for the winner), 0 (drawn game), -1 (loos for the winner) and None (not played).
+            drawn (bool): if True, the final ratings will remains at the same values as there was
+        """
+        if drawn:
+            return
+        
+        for result in games:
+            r1, r2 = self.bulk_create_from_db(name_p1, name_p2) # type: ignore
+            if result == 1:
+                self.bulk_dump_to_database((
+                    self.rate(r1, [(Player.WIN, r2)]),
+                    self.rate(r2, [(Player.LOSS, r1)])
+                )) # type: ignore
+            
+            elif result == 0:
+                self.bulk_dump_to_database((
+                    self.rate(r1, [(Player.DRAW, r2)]),
+                    self.rate(r2, [(Player.DRAW, r1)])
+                )) # type: ignore
+            
+            elif result == -1:
+                self.bulk_dump_to_database((
+                    self.rate(r1, [(Player.LOSS, r2)]),
+                    self.rate(r2, [(Player.WIN, r1)])
+                )) # type: ignore
 
     def quality_1vs1(self, rating1, rating2):
         expected_score1 = self.expect_score(rating1, rating2, self.reduce_impact(rating1))
