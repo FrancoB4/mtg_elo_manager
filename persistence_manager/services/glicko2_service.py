@@ -175,7 +175,17 @@ class Glicko2(object):
             self.rate(r2, [(Player.DRAW if drawn else Player.LOSS, r1)])
         )) # type: ignore
         
-    def rate_1vs1_bo3(self, name_p1: str, name_p2: str, games: list, drawn: bool = False):
+    def sum_bo3_results(self, games: list) -> int:
+        cont = 0
+        for game in games:
+            if game == 1:
+                cont += 1
+            elif game == -1:
+                cont -= 1
+        return cont
+    
+        
+    def rate_1vs1_bo3(self, name_p1: str, name_p2: str, games: list, no_diff_on_drawn: bool = False):
         """A function that update the ratings of two players that play a 1v1 bo3 match.
 
         Args:
@@ -184,27 +194,29 @@ class Glicko2(object):
             games (list): a list with three values, one for each game. Te possible values are 1 (win for the winner), 0 (drawn game), -1 (loos for the winner) and None (not played).
             drawn (bool): if True, the final ratings will remains at the same values as there was
         """
-        if drawn:
+        if no_diff_on_drawn and self.sum_bo3_results(games) == 0:
             return
+        
+        r1_default, r2_default = self.bulk_create_from_db(name_p1, name_p2) # type: ignore
         
         for result in games:
             r1, r2 = self.bulk_create_from_db(name_p1, name_p2) # type: ignore
             if result == 1:
                 self.bulk_dump_to_database((
-                    self.rate(r1, [(Player.WIN, r2)]),
-                    self.rate(r2, [(Player.LOSS, r1)])
+                    self.rate(r1, [(Player.WIN, r2_default)]),
+                    self.rate(r2, [(Player.LOSS, r1_default)])
                 )) # type: ignore
             
             elif result == 0:
                 self.bulk_dump_to_database((
-                    self.rate(r1, [(Player.DRAW, r2)]),
-                    self.rate(r2, [(Player.DRAW, r1)])
+                    self.rate(r1, [(Player.DRAW, r2_default)]),
+                    self.rate(r2, [(Player.DRAW, r1_default)])
                 )) # type: ignore
             
             elif result == -1:
                 self.bulk_dump_to_database((
-                    self.rate(r1, [(Player.LOSS, r2)]),
-                    self.rate(r2, [(Player.WIN, r1)])
+                    self.rate(r1, [(Player.LOSS, r2_default)]),
+                    self.rate(r2, [(Player.WIN, r1_default)])
                 )) # type: ignore
 
     def quality_1vs1(self, rating1, rating2):
