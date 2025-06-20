@@ -185,7 +185,7 @@ class Glicko2(object):
         return cont
     
         
-    def rate_1vs1_bo3(self, name_p1: str, name_p2: str, games: list, no_diff_on_drawn: bool = False):
+    def rate_1vs1_bo3(self, name_p1: str, name_p2: str, games: list, no_diff_on_drawn: bool = False, game_by_game_diff: bool = False):
         """A function that update the ratings of two players that play a 1v1 bo3 match.
 
         Args:
@@ -201,6 +201,10 @@ class Glicko2(object):
         
         for result in games:
             r1, r2 = self.bulk_create_from_db(name_p1, name_p2) # type: ignore
+            if not game_by_game_diff:
+                r1.rd = r1_default.rd
+                r2.rd = r2_default.rd
+            
             if result == 1:
                 self.bulk_dump_to_database((
                     self.rate(r1, [(Player.WIN, r2_default)]),
@@ -219,20 +223,23 @@ class Glicko2(object):
                     self.rate(r2, [(Player.WIN, r1_default)])
                 )) # type: ignore
                 
-    def rate_tournament_bo3(self, match: list[tuple[str, str, list[int|None]]], no_diff_on_drawn: bool = False):
+    def rate_tournament_bo3(self, matches: list[tuple[str, str, list[int|None]]], no_diff_on_drawn: bool = False, game_by_game_diff: bool = False):
         """A function that update the ratings of two players that play a 1v1 bo3 match.
 
         Args:
             match (list): a list with tuples with the names of the players and the results of each game.
             no_diff_on_drawn (bool): if True, the final ratings will remains at the same values as there was
+            game_by_game_diff (bool): if True, the ratings will be updated game by game, otherwise the ratings will be updated only at the end of the match. If the order of the matchs is not known, this parameter should be set to False.
         """
-        for name_p1, name_p2, games in match:
+        for name_p1, games, name_p2 in matches:
+            if name_p1 == 'Bye' or name_p2 == 'Bye':
+                continue
             if not Player.objects.filter(name__iexact=name_p1).exists():
                 Player.objects.create(name=name_p1)
             if not Player.objects.filter(name__iexact=name_p2).exists():
                 Player.objects.create(name=name_p2)
                 
-            self.rate_1vs1_bo3(name_p1, name_p2, games, no_diff_on_drawn)
+            self.rate_1vs1_bo3(name_p1, name_p2, games, no_diff_on_drawn=no_diff_on_drawn, game_by_game_diff=game_by_game_diff)
 
     def quality_1vs1(self, rating1, rating2):
         expected_score1 = self.expect_score(rating1, rating2, self.reduce_impact(rating1))
