@@ -218,6 +218,21 @@ class Glicko2(object):
                     self.rate(r1, [(Player.LOSS, r2_default)]),
                     self.rate(r2, [(Player.WIN, r1_default)])
                 )) # type: ignore
+                
+    def rate_tournament_bo3(self, match: list[tuple[str, str, list[int|None]]], no_diff_on_drawn: bool = False):
+        """A function that update the ratings of two players that play a 1v1 bo3 match.
+
+        Args:
+            match (list): a list with tuples with the names of the players and the results of each game.
+            no_diff_on_drawn (bool): if True, the final ratings will remains at the same values as there was
+        """
+        for name_p1, name_p2, games in match:
+            if not Player.objects.filter(name__iexact=name_p1).exists():
+                Player.objects.create(name=name_p1)
+            if not Player.objects.filter(name__iexact=name_p2).exists():
+                Player.objects.create(name=name_p2)
+                
+            self.rate_1vs1_bo3(name_p1, name_p2, games, no_diff_on_drawn)
 
     def quality_1vs1(self, rating1, rating2):
         expected_score1 = self.expect_score(rating1, rating2, self.reduce_impact(rating1))
