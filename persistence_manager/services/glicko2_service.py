@@ -1,5 +1,6 @@
 import math
-from ..models import Player
+from datetime import date as da
+from ..models import Player, Tournament, TournamentRating
 from django.db import transaction
 
 
@@ -16,7 +17,7 @@ class Rating(object):
         return '%s.%s(mu=%.3f, phi=%.3f, sigma=%.3f)' % args
 
 
-class Glicko2(object):
+class Glicko2Service(object):
     def __init__(self, rating=Player.DEFAULT_RATING, rd=Player.DEFAULT_RD, sigma=Player.SIGMA, tau=Player.TAU, epsilon=Player.EPSILON):
         self.rating = rating
         self.rd = rd
@@ -24,7 +25,7 @@ class Glicko2(object):
         self.tau = tau
         self.epsilon = epsilon
         
-    def create_from_db(self, name) -> Rating:
+    def create_from_db(self, name: str) -> Rating:
         player = Player.objects.get(name=name)
         name = player.name
         rating = player.rating
@@ -223,7 +224,7 @@ class Glicko2(object):
                     self.rate(r2, [(Player.WIN, r1_default)])
                 )) # type: ignore
                 
-    def rate_tournament_bo3(self, matches: list[tuple[str, str, list[int|None]]], no_diff_on_drawn: bool = False, game_by_game_diff: bool = False):
+    def rate_tournament_bo3(self, matches: list[tuple[str, str, list[int|None]]], no_diff_on_drawn: bool = False, game_by_game_diff: bool = False, date: str | None = None):
         """A function that update the ratings of two players that play a 1v1 bo3 match.
 
         Args:
@@ -231,15 +232,37 @@ class Glicko2(object):
             no_diff_on_drawn (bool): if True, the final ratings will remains at the same values as there was
             game_by_game_diff (bool): if True, the ratings will be updated game by game, otherwise the ratings will be updated only at the end of the match. If the order of the matchs is not known, this parameter should be set to False.
         """
+        tournament = Tournament.objects.create(name=da.today().strftime('%d-%m-%Y') if date is None else date, date=da.today() if date is None else date)
+        
         for name_p1, name_p2, games in matches:
             if name_p1 == 'Bye' or name_p2 == 'Bye':
                 continue
-            if not Player.objects.filter(name__iexact=name_p1).exists():
-                Player.objects.create(name=name_p1)
-            if not Player.objects.filter(name__iexact=name_p2).exists():
-                Player.objects.create(name=name_p2)
-                
+            p1 = Player.objects.get_or_create(name=name_p1)[0]
+            p2 = Player.objects.get_or_create(name=name_p2)[0]
+            
+            p1.matchs_played += 1
+            p2.matchs_played += 1
+            if self.sum_bo3_results(games) > 0:
+                p1.matches_won += 1
+                p2.matches_lost += 1
+            elif self.sum_bo3_results(games) < 0:
+                p1.matches_lost += 1
+                p2.matches_won += 1
+            else:
+                p1.matches_drawn += 1
+                p2.matches_drawn += 1
+            p1.save()
+            p2.save()
+            
+            if not tournament.players.filter(name__iexact=name_p1).exists():
+                tournament.players.add(p1)
+            if not tournament.players.filter(name__iexact=name_p2).exists():
+                tournament.players.add(p2)
+            
             self.rate_1vs1_bo3(name_p1, name_p2, games, no_diff_on_drawn=no_diff_on_drawn, game_by_game_diff=game_by_game_diff)
+            
+        for player in tournament.players.all():
+            TournamentRating.objects.create(player=player, tournament=tournament, rating=player.rating, rd=player.rd)
 
     def quality_1vs1(self, rating1, rating2):
         expected_score1 = self.expect_score(rating1, rating2, self.reduce_impact(rating1))

@@ -39,7 +39,7 @@ class ImportService:
         with open(f'imports/{file_name}', 'r') as file:
             lines = file.readlines()
             for line in lines:
-                if line == '':
+                if line == '\n':
                     continue
                 p1, score, p2 = line.strip().split(',')
                 score = self._parse_score(score)
