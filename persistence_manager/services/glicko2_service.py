@@ -231,7 +231,7 @@ class Glicko2(object):
             no_diff_on_drawn (bool): if True, the final ratings will remains at the same values as there was
             game_by_game_diff (bool): if True, the ratings will be updated game by game, otherwise the ratings will be updated only at the end of the match. If the order of the matchs is not known, this parameter should be set to False.
         """
-        for name_p1, games, name_p2 in matches:
+        for name_p1, name_p2, games in matches:
             if name_p1 == 'Bye' or name_p2 == 'Bye':
                 continue
             if not Player.objects.filter(name__iexact=name_p1).exists():

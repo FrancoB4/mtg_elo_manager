@@ -1,6 +1,6 @@
 
 class ImportService:
-    def _parse_score(self, score: str) -> list:
+    def _parse_score(self, score: str) -> list[int|None]:
         score = score.strip()
         score_p1 = int(score[0])
         score_p2 = int(score[2])
@@ -27,20 +27,22 @@ class ImportService:
             return [-1, -1, 0]
         elif total_score == 1 and played_games == 3:
             # 2-1
-            return [1, 1, -1]
+            return [1, -1, 1]
         elif total_score == -1 and played_games == 3:
             # 1-2
-            return [-1, -1, 1]
+            return [-1, 1, -1]
         
-        return [None] * 3
+        return [None, None, None]
     
-    def import_tournament_from_csv(self, file_name: str):
+    def import_tournament_from_csv(self, file_name: str) -> list[tuple[str, str, list[int|None]]]:
         matches = []
-        with open(file_name, 'r') as file:
+        with open(f'imports/{file_name}', 'r') as file:
             lines = file.readlines()
             for line in lines:
+                if line == '':
+                    continue
                 p1, score, p2 = line.strip().split(',')
                 score = self._parse_score(score)
-                matches.append((p1.strip(), score, p2.strip()))
+                matches.append((p1.strip(), p2.strip(), score))
                 
         return matches
