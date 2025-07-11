@@ -11,6 +11,11 @@ class Command(BaseCommand):
             action='store_true',
             help='Show the top ten players in the table.'
         )
+        parser.add_argument(
+            '--full',
+            action='store_true',
+            help='Show the full data of players.'
+        )
         
     def handle(self, *args, **options):
         export_service = ExportService()
@@ -19,11 +24,11 @@ class Command(BaseCommand):
         
         if top_ten_flag:
             try:
-                export_service.table_export_top_ten()
+                export_service.table_export_top_ten(full=options['full'])
             except Exception as e:
                 raise CommandError(f'An error occurred while exporting the top ten players: {e}')
         else:
             try:
-                export_service.table_export()
+                export_service.table_export(full=options['full'])
             except Exception as e:
-                raise CommandError(f'An error occurred while exporting the top ten players: {e}')
+                raise CommandError(f'An error occurred while exporting the complete list players: {e}')

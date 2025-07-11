@@ -193,6 +193,10 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# IDE
+.vscode/
+
 # Custom project ignored files and directories
 exports/*
 imports/*
+data/*

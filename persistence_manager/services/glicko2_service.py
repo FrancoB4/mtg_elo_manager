@@ -57,10 +57,7 @@ class Glicko2Service(object):
         with transaction.atomic():
             for rating in ratings:
                 p = Player.objects.get(name=rating.name)
-                p.rating = rating.rating
-                p.rd = rating.rd
-                p.sigma = rating.sigma
-                p.save()
+                p.update_stats(rating.rating, rating.rd, rating.sigma)
 
     def create_rating(self, name: str, rating=None, rd=None, sigma=None) -> Rating:
         if rating is None:
@@ -234,11 +231,18 @@ class Glicko2Service(object):
         """
         tournament = Tournament.objects.create(name=da.today().strftime('%d-%m-%Y') if date is None else date, date=da.today() if date is None else date)
         
+        players_start_ratings = {}
+        
         for name_p1, name_p2, games in matches:
             if name_p1 == 'Bye' or name_p2 == 'Bye':
                 continue
             p1 = Player.objects.get_or_create(name=name_p1)[0]
             p2 = Player.objects.get_or_create(name=name_p2)[0]
+            
+            if name_p1 not in players_start_ratings.keys():
+                players_start_ratings[name_p1] = p1.rating
+            if name_p2 not in players_start_ratings.keys():
+                players_start_ratings[name_p2] = p2.rating
             
             p1.matchs_played += 1
             p2.matchs_played += 1
@@ -260,6 +264,10 @@ class Glicko2Service(object):
                 tournament.players.add(p2)
             
             self.rate_1vs1_bo3(name_p1, name_p2, games, no_diff_on_drawn=no_diff_on_drawn, game_by_game_diff=game_by_game_diff)
+            
+        for player_name, player_start_rating in players_start_ratings.items():
+            player = Player.objects.get(name=player_name)
+            player.determine_last_tendency(player_start_rating)
             
         for player in tournament.players.all():
             TournamentRating.objects.create(player=player, tournament=tournament, rating=player.rating, rd=player.rd)
