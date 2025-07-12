@@ -38,7 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Project Apps
-    'persistence_manager.apps.PersistenceManagerConfig'
+    'players.apps.PlayersConfig',
+    'tournaments.apps.TournamentsConfig',
+    'decks.apps.DecksConfig',
+    'leagues.apps.LeaguesConfig',
 ]
 
 MIDDLEWARE = [
