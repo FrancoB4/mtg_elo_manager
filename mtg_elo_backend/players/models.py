@@ -1,26 +1,6 @@
 from django.db import models
 
 
-# class Tournament(models.Model):
-#     name = models.CharField('name', max_length=35, null=False)
-#     date = models.DateField('date', null=False, help_text='The date of the tournament.')
-#     players = models.ManyToManyField(
-#         'Player', 
-#         related_name='tournaments', help_text='The players who participated in the tournament.'
-#     )
-#     winner = models.ForeignKey(
-#         'Player', 
-#         on_delete=models.SET_NULL, null=True, 
-#         related_name='won_tournaments', help_text='The player who won the tournament.'
-#     )
-    
-#     def __str__(self) -> str:
-#         return f'{self.name} ({self.date}): Winner: {self.winner.name if self.winner else "Deleted"}'
-    
-#     class Meta:
-#         ordering = ['-date']
-
-
 # Create your models here.
 class Player(models.Model):
     #: The actual score for win
@@ -47,21 +27,21 @@ class Player(models.Model):
     name = models.CharField('name', max_length=35, null=False, unique=True)
     rating = models.IntegerField(
         'elo', 
-        default=1500, null=False, 
+        default=DEFAULT_RATING, null=False, 
         help_text='The rating of a player, wich measures the skill level.'
     )
     rd = models.FloatField(
         'RD', 
-        default=350, null=False, 
+        default=DEFAULT_RD, null=False, 
         help_text='Rating Deviation: the uncertainty in the rating of a player.'
     )
     sigma = models.FloatField(
         'vol', 
-        default=0.06, null=False, 
+        default=SIGMA, null=False, 
         help_text='The volatility of the player\'s rating, which measures the \
             consistency of the player\'s performance.'
     )
-    matchs_played = models.IntegerField(
+    matches_played = models.IntegerField(
         'matches played',
         default=0, null=False,
         help_text='The number of matches played by the player.'
@@ -128,34 +108,7 @@ class Player(models.Model):
         self.save()
     
     def __str__(self) -> str:
-        return f'{self.name:<35}|{self.rating:^6}|{self.get_last_tendency_display():^11}|{round(self.rd, 8):^14}|{self.matchs_played:^9}' # type: ignore
+        return f'{self.name:<35}|{self.rating:^6}|{self.get_last_tendency_display():^11}|{round(self.rd, 8):^14}|{self.matches_played:^9}' # type: ignore
     
     class Meta:
         ordering = ['-rating', 'rd']
-
-
-# class TournamentRating(models.Model):
-#     tournament = models.ForeignKey(
-#         Tournament, 
-#         on_delete=models.CASCADE, related_name='ratings', 
-#         help_text='The tournament to which this rating belongs.'
-#     )
-#     player = models.ForeignKey(
-#         Player, 
-#         on_delete=models.CASCADE, related_name='ratings', 
-#         help_text='The player to whom this rating belongs.'
-#     )
-#     rating = models.FloatField(
-#         'rating', null=False, 
-#         help_text='The rating of the player in the tournament.'
-#     )
-#     rd = models.FloatField(
-#         'RD', null=False, 
-#         help_text='Rating Deviation of the player in the tournament.'
-#     )
-    
-#     def __str__(self) -> str:
-#         return f'{self.player.name:<35}|{self.rating:^6}|{round(self.rd, 8):^14}|'
-    
-#     class Meta:
-#         ordering = ['tournament__date', '-rating', 'rd']

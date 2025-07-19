@@ -40,8 +40,9 @@ INSTALLED_APPS = [
     # Project Apps
     'players.apps.PlayersConfig',
     'tournaments.apps.TournamentsConfig',
-    'decks.apps.DecksConfig',
+    'apps.decks.apps.DecksConfig',
     'leagues.apps.LeaguesConfig',
+    'apps.users.apps.UsersConfig',
 ]
 
 MIDDLEWARE = [
@@ -126,3 +127,6 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Custom User Model
+AUTH_USER_MODEL = 'users.CustomUser'

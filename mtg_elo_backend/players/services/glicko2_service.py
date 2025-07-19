@@ -145,7 +145,7 @@ class Glicko2Service(object):
         if not series:
             # If the team didn't play in the series, do only Step 6
             rd_star = math.sqrt(rating.rd ** 2 + rating.sigma ** 2)
-            return self.scale_up(self.create_rating(rating.rating, rd_star, rating.sigma)) # type: ignore
+            return self.scale_up(self.create_rating(rating.name, rating.rating, rd_star, rating.sigma)) # type: ignore
         for actual_score, other_rating in series:
             other_rating = self.scale_down(other_rating)
             impact = self.reduce_impact(other_rating)
@@ -165,7 +165,7 @@ class Glicko2Service(object):
         r = rating.rating + rd ** 2 * (difference / variance)
         # Step 8. Convert ratings and RD's back to original scale.
         return self.scale_up(self.create_rating(rating.name, r, rd, sigma))
-
+    
     def rate_1vs1(self, name_p1, name_p2, drawn=False):
         r1, r2 = self.bulk_create_from_db(name_p1, name_p2) # type: ignore
         self.bulk_dump_to_database((
@@ -173,14 +173,14 @@ class Glicko2Service(object):
             self.rate(r2, [(Player.DRAW if drawn else Player.LOSS, r1)])
         )) # type: ignore
         
-    def sum_bo3_results(self, games: list) -> int:
-        cont = 0
-        for game in games:
-            if game == 1:
-                cont += 1
-            elif game == -1:
-                cont -= 1
-        return cont
+    # def sum_bo3_results(self, games: list) -> int:
+    #     cont = 0
+    #     for game in games:
+    #         if game == 1:
+    #             cont += 1
+    #         elif game == -1:
+    #             cont -= 1
+    #     return cont
     
         
     # def rate_1vs1_bo3(self, name_p1: str, name_p2: str, games: list, no_diff_on_drawn: bool = False, game_by_game_diff: bool = False):

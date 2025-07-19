@@ -36,3 +36,13 @@ def get_games_won_per_player(games: list[int | None]) -> tuple[int, int]:
     p1_wins = sum(1 for game in games if game == 1)
     p2_wins = sum(1 for game in games if game == -1)
     return p1_wins, p2_wins
+
+
+def sum_bo3_results(games: list) -> int:
+        cont = 0
+        for game in games:
+            if game == 1:
+                cont += 1
+            elif game == -1:
+                cont -= 1
+        return cont

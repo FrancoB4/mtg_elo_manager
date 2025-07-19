@@ -36,7 +36,7 @@ class ImportService:
     
     def import_tournament_from_csv(self, file_name: str) -> list[tuple[str, str, list[int|None]]]:
         matches = []
-        with open(f'imports/{file_name}', 'r') as file:
+        with open(f'imports/{file_name}.csv', 'r') as file:
             lines = file.readlines()
             for line in lines:
                 if line == '\n':

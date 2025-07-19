@@ -1,29 +1,25 @@
 from django.test import TestCase
 from .models import Player
+from .services.glicko2_service import Glicko2Service, Rating
 
 class PlaterTest(TestCase):
     def setUp(self):
-        self.p1 = Player.objects.create(name='P1')
+        self.p1 = Player.objects.create(name='P1', rating=1500, rd=200)
         self.p2 = Player.objects.create(name='P2', rating=1400, rd=30)
         self.p3 = Player.objects.create(name='P3', rating=1550, rd=100)
         self.p4 = Player.objects.create(name='P4', rating=1700, rd=300)
         
         
-    def example_case_test(self):
-        # Create a player called Ryan
-        Ryan = glicko2.Player()
-        # Following the example at:
-        # http://math.bu.edu/people/mg/glicko/glicko2.doc/example.html
-        # Pretend Ryan (of rating 1500 and rating deviation 350)
-        # plays players of ratings 1400, 1550 and 1700
-        # and rating deviations 30, 100 and 300 respectively
-        # with outcomes 1, 0 and 0.
-        #sprint "Old Rating: " + str(Ryan.rating)
-        print("Old Rating Deviation: " + str(p1.rd))
-        print("Old Volatility: " + str(p1.vol))
-        p1.update_player([p2.elo, p3.elo, p4.elo],
-            [p2.rating_derivation, p3.rating_derivation, p4.rating_derivation], [1, 0, 0])
-        print("New Rating: " + str(p1.rating))
-        print("New Rating Deviation: " + str(p1.rd))
-        print("New Volatility: " + str(p1.vol))
+    def test_base_case(self):
+        glicko = Glicko2Service()
+        r1 = glicko.create_rating(self.p1.name, self.p1.rating, self.p1.rd, self.p1.sigma)
+        r2 = glicko.create_rating(self.p2.name, self.p2.rating, self.p2.rd, self.p2.sigma)
+        r3 = glicko.create_rating(self.p3.name, self.p3.rating, self.p3.rd, self.p3.sigma)
+        r4 = glicko.create_rating(self.p4.name, self.p4.rating, self.p4.rd, self.p4.sigma)
+        
+        r1 = glicko.rate(r1, [(Player.WIN, r2), (Player.LOSS, r3), (Player.LOSS, r4)])
+        
+        self.assertAlmostEqual(r1.rating, 1464.06, delta=0.01)
+        self.assertAlmostEqual(r1.rd, 151.52, delta=0.01)
+        self.assertAlmostEqual(r1.sigma, 0.059998, delta=0.00001)
     

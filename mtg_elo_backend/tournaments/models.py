@@ -1,6 +1,6 @@
 from django.db import models, transaction
 from players.models import Player
-from decks.models import PlayerDeck
+from apps.decks.models import PlayerDeck
 from players.services.glicko2_service import Glicko2Service, Rating
 from players.services.helper import get_games_won_per_player
 
@@ -27,23 +27,8 @@ class Tournament(models.Model):
                 tr.sigma = rating.sigma
                 tr.save()
     
-    def rate_tournament(self, matches: list[tuple[str, str, list[int|None]]], no_diff_on_drawn: bool = False, game_by_game_diff: bool = False, date: str | None = None) -> None:
+    def rate_tournament(self, matches: list[tuple[str, str, list[int|None]]], no_diff_on_drawn: bool = False) -> None:
         """Rate the tournament based on the players' performance."""
-        for name_p1, name_p2, games in matches:
-            p1 = Player.objects.get_or_create(name=name_p1)[0] if name_p1 != 'Bye' else None
-            p2 = Player.objects.get_or_create(name=name_p2)[0] if name_p2 != 'Bye' else None
-            
-            if p1 is not None and not self.players.filter(name=name_p1).exists():
-                TournamentRating.objects.create(
-                    tournament=self, player=p1, rating=Player.DEFAULT_RATING, rd=Player.DEFAULT_RD, sigma=Player.SIGMA
-                )
-                self.players.add(p1)
-            if p2 is not None and not self.players.filter(name=name_p2).exists():
-                TournamentRating.objects.create(
-                    tournament=self, player=p2, rating=Player.DEFAULT_RATING, rd=Player.DEFAULT_RD, sigma=Player.SIGMA
-                )
-                self.players.add(p2)
-                
         glicko_service = Glicko2Service()
         
         matches_per_round = self.players.count() // 2
@@ -51,15 +36,24 @@ class Tournament(models.Model):
         round = Round.objects.create(tournament=self, number=1)
         
         for name_p1, name_p2, games in matches:
-            if name_p1 == 'Bye' or name_p2 == 'Bye':
+            p1 = Player.objects.get_or_create(name=name_p1)[0] if name_p1 != 'Bye' else None
+            p2 = Player.objects.get_or_create(name=name_p2)[0] if name_p2 != 'Bye' else None
+            
+            tr1 = TournamentRating.objects.get_or_create(tournament=self, player=p1)[0] if p1 else None
+            tr2 = TournamentRating.objects.get_or_create(tournament=self, player=p2)[0] if p2 else None
+             
+            if p1 is not None and not self.players.filter(name=name_p1).exists():
+                self.players.add(p1)
+            if p2 is not None and not self.players.filter(name=name_p2).exists():
+                self.players.add(p2)
+            
+            if not tr1 or not tr2:
                 continue
             
             if matches_procesed == matches_per_round:
                 round = Round.objects.create(tournament=self, number=self.rounds.count() + 1) # type: ignore
                 matches_procesed = 0
             
-            p1 = Player.objects.get(name=name_p1)
-            p2 = Player.objects.get(name=name_p2)
             p1_wins, p2_wins = get_games_won_per_player(games)
             
             Match.objects.create(
@@ -74,50 +68,51 @@ class Tournament(models.Model):
             if no_diff_on_drawn and p1_wins == p2_wins:
                 continue
             
-            tr1 = TournamentRating.objects.get(tournament=self, player=p1)
-            tr2 = TournamentRating.objects.get(tournament=self, player=p2)
+            r1_aux = glicko_service.create_rating(name_p1, tr1.rating, tr1.rd, tr1.sigma)
+            r2_aux = glicko_service.create_rating(name_p2, tr2.rating, tr2.rd, tr2.sigma)
             
-            r1_default = glicko_service.create_rating(
-                tr1.player.name, tr1.rating, tr1.rd, tr1.sigma,
-            )
-            r2_default = glicko_service.create_rating(
-                tr2.player.name, tr2.rating, tr2.rd, tr2.sigma,
-            )
+            r1 = glicko_service.create_rating(name_p1, tr1.rating, tr1.rd, tr1.sigma)
+            r2 = glicko_service.create_rating(name_p2, tr2.rating, tr2.rd, tr2.sigma)
+            
+            p1_series = []
+            p2_series = []
             
             for result in games:
-                tr1 = TournamentRating.objects.get(tournament=self, player=p1)
-                tr2 = TournamentRating.objects.get(tournament=self, player=p2)
-                r1 = glicko_service.create_rating(
-                    tr1.player.name, tr1.rating, tr1.rd, tr1.sigma,
-                )
-                r2 = glicko_service.create_rating(
-                    tr2.player.name, tr2.rating, tr2.rd, tr2.sigma,
-                )
-                
-                if not game_by_game_diff:
-                    r1.rd = r1_default.rd
-                    r2.rd = r2_default.rd
-                
                 if result == 1:
-                    self.bulk_dump_to_database((
-                        glicko_service.rate(r1, [(Player.WIN, r2_default)]),
-                        glicko_service.rate(r2, [(Player.LOSS, r1_default)])
-                    )) # type: ignore
+                    p1_series.append((Player.WIN, r2_aux))
+                    p2_series.append((Player.LOSS, r1_aux))
+                    # r1 = glicko_service.rate(r1, [(Player.WIN, r2_aux)])
+                    # r2 = glicko_service.rate(r2, [(Player.LOSS, r1_aux)])
                 
                 elif result == 0:
-                    self.bulk_dump_to_database((
-                        glicko_service.rate(r1, [(Player.DRAW, r2_default)]),
-                        glicko_service.rate(r2, [(Player.DRAW, r1_default)])
-                    )) # type: ignore
+                    p1_series.append((Player.DRAW, r2_aux))
+                    p2_series.append((Player.DRAW, r1_aux))
+                    # r1 = glicko_service.rate(r1, [(Player.DRAW, r2_aux)])
+                    # r2 = glicko_service.rate(r2, [(Player.DRAW, r1_aux)])
                 
                 elif result == -1:
-                    self.bulk_dump_to_database((
-                        glicko_service.rate(r1, [(Player.LOSS, r2_default)]),
-                        glicko_service.rate(r2, [(Player.WIN, r1_default)])
-                    )) # type: ignore
+                    p1_series.append((Player.LOSS, r2_aux))
+                    p2_series.append((Player.WIN, r1_aux))
+                    # r1 = glicko_service.rate(r1, [(Player.LOSS, r2_aux)])
+                    # r2 = glicko_service.rate(r2, [(Player.WIN, r1_aux)])
+                    
+                # r1_aux = glicko_service.create_rating(
+                #     r1.name, r1.rating, r1.rd, r1.sigma,
+                # )
+                # r2_aux = glicko_service.create_rating(
+                #     r2.name, r2.rating, r2.rd, r2.sigma,
+                # )
+            
+            r1 = glicko_service.rate(r1, p1_series)
+            r2 = glicko_service.rate(r2, p2_series)
+            
+            self.bulk_dump_to_database((r1, r2)) # type: ignore
+            # tr1.update(r1)
+            # tr2.update(r2)
             matches_procesed += 1
             
-        self.winner = self.players.order_by('-ratings__rating').first()
+        # self.winner = self.players.order_by('-ratings__rating').first()
+        self.winner = self.ratings.order_by('-rating').first().player if self.ratings.exists() else None # type: ignore
         self.save()
 
     
@@ -223,6 +218,13 @@ class TournamentRating(models.Model):
         null=False, default=Player.SIGMA,
         help_text='The volatility of the player\'s rating in the tournament.'
     )
+    
+    def update(self, rating: Rating) -> None:
+        """Update the rating of the player in the tournament."""
+        self.rating = rating.rating
+        self.rd = rating.rd
+        self.sigma = rating.sigma
+        self.save()
     
     def __str__(self) -> str:
         return f'{self.player.name:<35}|{self.rating:^6}|{round(self.rd, 8):^14}|'

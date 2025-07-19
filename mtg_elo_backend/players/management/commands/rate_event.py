@@ -25,7 +25,7 @@ class Command(BaseCommand):
         file_name = options['file_name']
         export_flag = options['export']
         
-        if os.path.exists(f'imports/{file_name}'):
+        if os.path.exists(f'imports/{file_name}.csv'):
             matches = import_service.import_tournament_from_csv(file_name)
         else:
             raise CommandError(f'File {file_name} does not exist in the imports directory.')
@@ -34,7 +34,7 @@ class Command(BaseCommand):
             try:
                 with transaction.atomic():
                     league = League.objects.get_or_create(name='Pauper League 2025')[0]
-                    league.rate_league_event(matches)
+                    league.rate_league_event(matches, date=file_name)
             except Exception as e:
                 raise CommandError(f'An error occurred while rating the event: {e}\nFile: {traceback.extract_tb(e.__traceback__)[-1].filename}, Line: {traceback.extract_tb(e.__traceback__)[-1].lineno}')
             
