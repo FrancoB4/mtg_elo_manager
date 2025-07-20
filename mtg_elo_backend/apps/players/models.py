@@ -1,21 +1,22 @@
 from django.db import models
+from services.helper import Rating
 
 
 # Create your models here.
 class Player(models.Model):
-    #: The actual score for win
-    WIN = 1.
-    #: The actual score for draw
-    DRAW = 0.5
-    #: The actual score for loss
-    LOSS = 0.
+    # #: The actual score for win
+    # WIN = 1.
+    # #: The actual score for draw
+    # DRAW = 0.5
+    # #: The actual score for loss
+    # LOSS = 0.
 
-    # Default settings for some values
-    DEFAULT_RATING = 1500
-    DEFAULT_RD = 350
-    SIGMA = 0.06
-    TAU = .5
-    EPSILON = 0.000001
+    # # Default settings for some values
+    # DEFAULT_RATING = 1500
+    # DEFAULT_RD = 350
+    # SIGMA = 0.06
+    # TAU = .5
+    # EPSILON = 0.000001
     
     class LastTendency(models.IntegerChoices):
         BIG_UP = 2, '↑'
@@ -27,17 +28,17 @@ class Player(models.Model):
     name = models.CharField('name', max_length=35, null=False, unique=True)
     rating = models.IntegerField(
         'elo', 
-        default=DEFAULT_RATING, null=False, 
+        default=Rating.DEFAULT_RATING, null=False, 
         help_text='The rating of a player, wich measures the skill level.'
     )
     rd = models.FloatField(
         'RD', 
-        default=DEFAULT_RD, null=False, 
+        default=Rating.DEFAULT_RD, null=False, 
         help_text='Rating Deviation: the uncertainty in the rating of a player.'
     )
     sigma = models.FloatField(
         'vol', 
-        default=SIGMA, null=False, 
+        default=Rating.SIGMA, null=False, 
         help_text='The volatility of the player\'s rating, which measures the \
             consistency of the player\'s performance.'
     )
@@ -93,7 +94,7 @@ class Player(models.Model):
         self.save()
         
     
-    def update_stats(self, rating, rd, sigma):
+    def update_stats(self, rating):
         """
         Update the player's statistics with new rating, RD, and sigma values.
         
@@ -101,9 +102,9 @@ class Player(models.Model):
         :param rd: The new Rating Deviation of the player.
         :param sigma: The new volatility of the player's rating.
         """
-        self.rating = rating
-        self.rd = rd
-        self.sigma = sigma
+        self.rating = rating.rating
+        self.rd = rating.rd
+        self.sigma = rating.sigma
         
         self.save()
     

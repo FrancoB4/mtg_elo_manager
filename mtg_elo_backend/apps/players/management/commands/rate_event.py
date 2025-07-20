@@ -2,9 +2,10 @@ import os
 
 from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
-from players.services.import_service import ImportService
-from players.services.export_service import ExportService
-from leagues.models import League
+from services.import_service import ImportService
+from services.export_service import ExportService
+from services.glicko2_service import Glicko2Service
+from apps.leagues.models import League
 import traceback
 
 class Command(BaseCommand):
@@ -32,9 +33,10 @@ class Command(BaseCommand):
         
         if matches:
             try:
+                glicko_service = Glicko2Service()
                 with transaction.atomic():
                     league = League.objects.get_or_create(name='Pauper League 2025')[0]
-                    league.rate_league_event(matches, date=file_name)
+                    glicko_service.rate_league_event(matches, league, date=file_name)
             except Exception as e:
                 raise CommandError(f'An error occurred while rating the event: {e}\nFile: {traceback.extract_tb(e.__traceback__)[-1].filename}, Line: {traceback.extract_tb(e.__traceback__)[-1].lineno}')
             

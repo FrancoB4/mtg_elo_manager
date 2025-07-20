@@ -1,7 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError, CommandParser
-from players.services.export_service import ExportService
-from players.models import Player
-from tournaments.models import Tournament, TournamentRating
+from services.export_service import ExportService
+from apps.tournaments.models import TournamentPlayer
 
 
 class Command(BaseCommand):
@@ -47,7 +46,7 @@ class Command(BaseCommand):
         if options['tournament']:
             if not options['tournament_name']:
                 raise CommandError('You must provide a tournament name when using the --tournament option.')
-            players = TournamentRating.objects.filter(
+            players = TournamentPlayer.objects.filter(
                 tournament__name=options['tournament_name']
             ).select_related('player')
             columns = {

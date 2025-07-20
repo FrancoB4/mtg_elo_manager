@@ -1,6 +1,7 @@
 from django.test import TestCase
 from .models import Player
-from .services.glicko2_service import Glicko2Service, Rating
+from services.glicko2_service import Glicko2Service
+from services.helper import Rating
 
 class PlaterTest(TestCase):
     def setUp(self):
@@ -17,7 +18,7 @@ class PlaterTest(TestCase):
         r3 = glicko.create_rating(self.p3.name, self.p3.rating, self.p3.rd, self.p3.sigma)
         r4 = glicko.create_rating(self.p4.name, self.p4.rating, self.p4.rd, self.p4.sigma)
         
-        r1 = glicko.rate(r1, [(Player.WIN, r2), (Player.LOSS, r3), (Player.LOSS, r4)])
+        r1 = glicko.rate(r1, [(Rating.WIN, r2), (Rating.LOSS, r3), (Rating.LOSS, r4)])
         
         self.assertAlmostEqual(r1.rating, 1464.06, delta=0.01)
         self.assertAlmostEqual(r1.rd, 151.52, delta=0.01)

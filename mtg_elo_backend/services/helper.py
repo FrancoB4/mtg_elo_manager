@@ -1,19 +1,21 @@
+from django.conf import settings
+
 class Rating(object):
     #: The actual score for win
-    WIN = 0.9999999999999
+    WIN = settings.WIN
     #: The actual score for draw
-    DRAW = 0.5
+    DRAW = settings.DRAW
     #: The actual score for loss
-    LOSS = 0.000000000001
+    LOSS = settings.LOSS
 
     # Default settings for some values
-    DEFAULT_RATING = 1500
-    DEFAULT_RD = 350
-    SIGMA = 0.06
-    TAU = .5
-    EPSILON = 0.000001
+    DEFAULT_RATING = settings.DEFAULT_RATING
+    DEFAULT_RD = settings.DEFAULT_RD
+    SIGMA = settings.SIGMA
+    TAU = settings.TAU
+    EPSILON = settings.EPSILON
     
-    def __init__(self, name, rating=DEFAULT_RATING, rd=DEFAULT_RD, sigma=SIGMA):
+    def __init__(self, name, rating=settings.DEFAULT_RATING, rd=settings.DEFAULT_RD, sigma=settings.SIGMA):
         self.name = name
         self.rating = rating
         self.rd = rd

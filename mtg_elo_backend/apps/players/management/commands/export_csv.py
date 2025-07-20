@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError, CommandParser
-from players.services.export_service import ExportService
+from services.export_service import ExportService
 
 
 class Command(BaseCommand):

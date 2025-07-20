@@ -38,10 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Project Apps
-    'players.apps.PlayersConfig',
-    'tournaments.apps.TournamentsConfig',
+    'apps.players.apps.PlayersConfig',
+    'apps.tournaments.apps.TournamentsConfig',
     'apps.decks.apps.DecksConfig',
-    'leagues.apps.LeaguesConfig',
+    'apps.leagues.apps.LeaguesConfig',
     'apps.users.apps.UsersConfig',
 ]
 
@@ -130,3 +130,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom User Model
 AUTH_USER_MODEL = 'users.CustomUser'
+
+
+#: The actual score for win
+WIN = 1.
+#: The actual score for draw
+DRAW = 0.5
+#: The actual score for loss
+LOSS = 0.
+
+# Default settings for some values
+DEFAULT_RATING = 1500
+DEFAULT_RD = 350
+SIGMA = 0.06
+TAU = .5
+EPSILON = 0.000001

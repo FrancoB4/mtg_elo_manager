@@ -1,5 +1,5 @@
 from django.db import models
-from players.models import Player
+from ..players.models import Player
 
 # Create your models here.
 class Deck(models.Model):

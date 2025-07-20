@@ -1,4 +1,4 @@
-from ..models import Player
+from apps.players.models import Player
 from datetime import datetime as dt
 from django.core.management.base import CommandError
 
