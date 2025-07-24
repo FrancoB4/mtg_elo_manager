@@ -3,21 +3,7 @@ from services.helper import Rating
 
 
 # Create your models here.
-class Player(models.Model):
-    # #: The actual score for win
-    # WIN = 1.
-    # #: The actual score for draw
-    # DRAW = 0.5
-    # #: The actual score for loss
-    # LOSS = 0.
-
-    # # Default settings for some values
-    # DEFAULT_RATING = 1500
-    # DEFAULT_RD = 350
-    # SIGMA = 0.06
-    # TAU = .5
-    # EPSILON = 0.000001
-    
+class BaseRating(models.Model):
     class LastTendency(models.IntegerChoices):
         BIG_UP = 2, '↑'
         UP = 1, '↗'
@@ -25,7 +11,6 @@ class Player(models.Model):
         DOWN = -1, '↘'
         BIG_DOWN = -2, '↓'
     
-    name = models.CharField('name', max_length=35, null=False, unique=True)
     rating = models.IntegerField(
         'elo', 
         default=Rating.DEFAULT_RATING, null=False, 
@@ -112,4 +97,10 @@ class Player(models.Model):
         return f'{self.name:<35}|{self.rating:^6}|{self.get_last_tendency_display():^11}|{round(self.rd, 8):^14}|{self.matches_played:^9}' # type: ignore
     
     class Meta:
+        abstract = True
         ordering = ['-rating', 'rd']
+
+class Player(BaseRating):
+
+    name = models.CharField('name', max_length=35, null=False, unique=True)
+    

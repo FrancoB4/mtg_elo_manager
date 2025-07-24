@@ -1,3 +1,4 @@
+import math
 from django.conf import settings
 
 class Rating(object):
@@ -48,3 +49,13 @@ def sum_bo3_results(games: list) -> int:
             elif game == -1:
                 cont -= 1
         return cont
+    
+
+def calculate_swiss_rounds(num_players: int) -> int:
+    """
+    Calculate the number of rounds needed for a Swiss tournament based on the number of players.
+    The formula is based on the logarithm base 2 of the number of players.
+    """
+    if num_players < 2:
+        return 0
+    return math.ceil(math.log2(num_players))

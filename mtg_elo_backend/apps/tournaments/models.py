@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.db import models, transaction
 from ..players.models import Player
 from ..decks.models import PlayerDeck
@@ -35,6 +36,52 @@ class Tournament(models.Model):
         )
         return tr, created
     
+    def export_to_csv(self) -> bool:
+        """Return a CSV representation of the tournament."""
+        import os
+
+        if os.path.exists(f'./exports/tournaments/{self.date.strftime("%Y-%m-%d")}.csv'):
+            return False
+
+        matches = Match.objects.filter(round__tournament=self)
+        with open(f'./exports/tournaments/{self.date.strftime("%Y-%m-%d")}.csv', 'w') as file:
+            for match in matches:
+                file.write(match.to_csv() + '\n')
+        return True
+        
+    def create_match(self, player1: Player | None, player2: Player | None, games: list[int | None], round_number: int | None = None) -> 'Match':
+        from services.helper import get_games_won_per_player
+        queryset = Match.objects.filter(Q(round__tournament=self))
+        
+        player1_score, player2_score = get_games_won_per_player(games)
+        
+        if round_number is None:
+            round_number = max(
+                queryset.filter(Q(player1=player1) | Q(player2=player1)).count() + 1,
+                queryset.filter(Q(player1=player2) | Q(player2=player2)).count() + 1,
+            )
+        
+        return Match.objects.create(
+            round=self.rounds.get(number=round_number), # type: ignore
+            player1=player1,
+            player2=player2,
+            player1_score=player1_score,
+            player2_score=player2_score,
+            winner=player1 if player1_score > player2_score else player2 if player2_score > player1_score else None,
+        )
+        
+    def set_winner(self):
+        """Set the winner of the tournament."""
+        if self.winner is None:
+            self.winner = self.ratings.order_by('-rating').first().player # type: ignore
+            self.save()
+    
+    def clean_empty_rounds(self):
+        """Remove empty rounds from the tournament."""
+        for round in self.rounds.all(): # type: ignore
+            if not round.matches.exists():
+                round.delete()
+    
     def __str__(self) -> str:
         return f'{self.name} ({self.date}): Winner: {self.winner.name if self.winner else "Deleted"}'
     
@@ -68,17 +115,17 @@ class Match(models.Model):
         related_name='matches', help_text='The round this match belongs to.'
     )
     player1 = models.ForeignKey(
-        Player, 
+        Player, null=True,
         on_delete=models.CASCADE, 
         related_name='matches_as_player1', help_text='The first player in the match.'
     )
     player2 = models.ForeignKey(
-        Player, 
+        Player, null=True,
         on_delete=models.CASCADE, 
         related_name='matches_as_player2', help_text='The second player in the match.'
     )
     winner = models.ForeignKey(
-        Player, 
+        Player,
         on_delete=models.SET_NULL, null=True, 
         related_name='won_matches', help_text='The player who won the match.'
     )
@@ -105,10 +152,13 @@ class Match(models.Model):
         help_text='The deck used by the looser in the match.'
     )
 
-    
+    def to_csv(self) -> str:
+        """Return a CSV representation of the match."""
+        return f'{self.player1.name if self.player1 else "Bye"},{self.player1_score}-{self.player2_score},{self.player2.name if self.player2 else "Bye"}'
+
     def __str__(self) -> str:
-        return f'Match: {self.player1.name}[{self.player1_score}] vs {self.player2.name}[{self.player2_score}] - {f"Winner: {self.winner.name}" if self.winner else "Draw"}'
-    
+        return f'{self.player1.name if self.player1 else "Bye"}[{self.player1_score}] vs {self.player2.name if self.player2 else "Bye"}[{self.player2_score}]'
+
     class Meta:
         ordering = ['round__tournament__date', 'round__number']
         

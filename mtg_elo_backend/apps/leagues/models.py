@@ -3,7 +3,7 @@ from django.db import models, transaction
 from services.helper import Rating
 from services.helper import get_games_won_per_player, sum_bo3_results
 from ..tournaments.models import Tournament
-from ..players.models import Player
+from ..players.models import Player, BaseRating
 
 from datetime import date as da
 
@@ -64,7 +64,7 @@ class League(models.Model):
     class Meta:
         ordering = ['name']
         
-class LeaguePlayer(models.Model):
+class LeaguePlayer(BaseRating):
     """Model representing a player in a league with their rating and deviation.
     """
     player = models.ForeignKey(
@@ -77,53 +77,10 @@ class LeaguePlayer(models.Model):
         on_delete=models.CASCADE, 
         related_name='players', help_text='The league the player is part of.'
     )
-    rating = models.FloatField(
-        'rating', 
-        default=1500, 
-        help_text='The player\'s rating in the league.'
-    )
-    rd = models.FloatField(
-        'rating deviation', 
-        default=350, 
-        help_text='The player\'s rating deviation in the league.'
-    )
-    sigma = models.FloatField(
-        'sigma', 
-        default=0.06, 
-        help_text='The player\'s sigma in the league.'
-    )
-    matches_played = models.PositiveIntegerField(
-        'matches played', 
-        default=0, 
-        help_text='The number of matches played by the player in the league.'
-    )
-    matches_won = models.PositiveIntegerField(
-        'matches won', 
-        default=0, 
-        help_text='The number of matches won by the player in the league.'
-    )
-    matches_lost = models.PositiveIntegerField(
-        'matches lost', 
-        default=0, 
-        help_text='The number of matches lost by the player in the league.'
-    )
-    matches_drawn = models.PositiveIntegerField(
-        'matches drawn', 
-        default=0, 
-        help_text='The number of matches drawn by the player in the league.'
-    )
-    
-    
-    def update_stats(self, rating: Rating) -> None:
-        """Update the player's stats in the league."""
-        self.rating = rating.rating
-        self.rd = rating.rd
-        self.sigma = rating.sigma
-        self.save()
     
     def __str__(self) -> str:
         return f'{self.player.name} - {self.league.name}'
     
-    class Meta:
+    class Meta: # type: ignore
         unique_together = ('player', 'league')
         ordering = ['player__name', 'league__name']
