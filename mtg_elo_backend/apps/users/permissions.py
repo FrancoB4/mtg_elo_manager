@@ -38,3 +38,12 @@ class IsSelf(permissions.BasePermission):
     def has_permission(self, request: Request, view: APIView) -> bool: # type: ignore
         user_id = int(view.kwargs.get('id'))
         return request.user.is_authenticated and request.user.id == user_id
+    
+
+class IsSuperUser(permissions.BasePermission):
+    """
+    Custom permission to only allow superusers to access certain views.
+    """
+
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.user.is_superuser
