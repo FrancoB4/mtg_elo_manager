@@ -1,6 +1,17 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/authHook';
+import { 
+  BsTrophy, 
+  BsBullseye,
+  BsPeople, 
+  BsPersonCircle,
+  BsBoxArrowRight,
+  BsPerson,
+  BsPersonPlus,
+  BsShieldCheck,
+  BsHouseDoor
+} from 'react-icons/bs';
 
 export const Header: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -18,6 +29,11 @@ export const Header: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
+  // Helper function to render icons with proper typing
+  const renderIcon = (IconComponent: React.ComponentType<{ className?: string }>, className: string = "w-4 h-4") => {
+    return React.createElement(IconComponent, { className });
+  };
+
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
@@ -26,7 +42,7 @@ export const Header: React.FC = () => {
           <div className="flex items-center space-x-4">
             <Link to="/" className="flex items-center space-x-2">
               <div className="h-8 w-8 flex items-center justify-center rounded-full bg-indigo-600">
-                <span className="text-sm font-bold text-white">MTG</span>
+                {renderIcon(BsShieldCheck, "w-5 h-5 text-white")}
               </div>
               <h1 className="text-2xl font-bold text-gray-900 hidden sm:block">MTG Elo Manager</h1>
             </Link>
@@ -35,44 +51,59 @@ export const Header: React.FC = () => {
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-6">
             <Link
+              to="/"
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                location.pathname === '/' 
+                  ? 'text-indigo-600 bg-indigo-50' 
+                  : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
+              }`}
+            >
+              {renderIcon(BsHouseDoor)}
+              <span>Inicio</span>
+            </Link>
+            <Link
               to="/rankings"
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 isActive('/rankings') 
                   ? 'text-indigo-600 bg-indigo-50' 
                   : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
               }`}
             >
-              🏆 Rankings
+              {renderIcon(BsTrophy)}
+              <span>Rankings</span>
             </Link>
             <Link
               to="/tournaments"
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 isActive('/tournaments') 
                   ? 'text-indigo-600 bg-indigo-50' 
                   : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
               }`}
             >
-              🎯 Torneos
+              {renderIcon(BsBullseye)}
+              <span>Torneos</span>
             </Link>
             <Link
               to="/leagues"
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 isActive('/leagues') 
                   ? 'text-indigo-600 bg-indigo-50' 
                   : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
               }`}
             >
-              🏆 Ligas
+              {renderIcon(BsShieldCheck)}
+              <span>Ligas</span>
             </Link>
             <Link
               to="/players"
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 isActive('/players') 
                   ? 'text-indigo-600 bg-indigo-50' 
                   : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
               }`}
             >
-              👥 Jugadores
+              {renderIcon(BsPeople)}
+              <span>Jugadores</span>
             </Link>
           </div>
 
@@ -85,31 +116,32 @@ export const Header: React.FC = () => {
                     Hola, <span className="font-medium">{user?.username}</span>
                   </div>
                   <div className="h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-indigo-600">
-                      {user?.username?.charAt(0).toUpperCase()}
-                    </span>
+                    {renderIcon(BsPersonCircle, "w-5 h-5 text-indigo-600")}
                   </div>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 >
-                  Salir
+                  {renderIcon(BsBoxArrowRight)}
+                  <span>Salir</span>
                 </button>
               </>
             ) : (
               <div className="flex items-center space-x-3">
                 <Link
                   to="/auth/signin"
-                  className="text-indigo-600 hover:text-indigo-500 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-500 px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 >
-                  Entrar
+                  {renderIcon(BsPerson)}
+                  <span>Entrar</span>
                 </Link>
                 <Link
                   to="/auth/signup"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 >
-                  Crear Cuenta
+                  {renderIcon(BsPersonPlus)}
+                  <span>Crear Cuenta</span>
                 </Link>
               </div>
             )}
@@ -120,44 +152,59 @@ export const Header: React.FC = () => {
         <div className="md:hidden mt-4 pt-4 border-t border-gray-200">
           <div className="flex space-x-4 overflow-x-auto">
             <Link
+              to="/"
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
+                location.pathname === '/' 
+                  ? 'text-indigo-600 bg-indigo-50' 
+                  : 'text-gray-700 hover:text-indigo-600'
+              }`}
+            >
+              {renderIcon(BsHouseDoor)}
+              <span>Inicio</span>
+            </Link>
+            <Link
               to="/rankings"
-              className={`px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
                 isActive('/rankings') 
                   ? 'text-indigo-600 bg-indigo-50' 
                   : 'text-gray-700 hover:text-indigo-600'
               }`}
             >
-              🏆 Rankings
+              {renderIcon(BsTrophy)}
+              <span>Rankings</span>
             </Link>
             <Link
               to="/tournaments"
-              className={`px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
                 isActive('/tournaments') 
                   ? 'text-indigo-600 bg-indigo-50' 
                   : 'text-gray-700 hover:text-indigo-600'
               }`}
             >
-              🎯 Torneos
+              {renderIcon(BsBullseye)}
+              <span>Torneos</span>
             </Link>
             <Link
               to="/leagues"
-              className={`px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
                 isActive('/leagues') 
                   ? 'text-indigo-600 bg-indigo-50' 
                   : 'text-gray-700 hover:text-indigo-600'
               }`}
             >
-              🏆 Ligas
+              {renderIcon(BsShieldCheck)}
+              <span>Ligas</span>
             </Link>
             <Link
               to="/players"
-              className={`px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
                 isActive('/players') 
                   ? 'text-indigo-600 bg-indigo-50' 
                   : 'text-gray-700 hover:text-indigo-600'
               }`}
             >
-              👥 Jugadores
+              {renderIcon(BsPeople)}
+              <span>Jugadores</span>
             </Link>
           </div>
         </div>

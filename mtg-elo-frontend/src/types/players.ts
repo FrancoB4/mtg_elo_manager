@@ -15,11 +15,11 @@ export type RankingType = 'global' | 'tournament' | 'league';
 
 export interface RankingFilters {
   type: RankingType;
-  tournamentId?: string;
+  tournamentName?: string;  // Cambiado de tournamentId a tournamentName
   leagueId?: string;
   page: number;
   pageSize: number;
-  search: string;
+  search?: string;
 }
 
 export interface PaginatedResponse<T> {

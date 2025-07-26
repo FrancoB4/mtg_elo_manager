@@ -12,13 +12,35 @@ class PlayersService {
    * Get player ranking based on filters
    */
   async getPlayerRanking(filters: RankingFilters): Promise<PaginatedResponse<Player>> {
-    const endpoint = this.buildRankingEndpoint(filters);
-    const params = this.buildQueryParams(filters);
-    
-    console.log(`Fetching players from: ${endpoint}?${params}`);
-
     try {
-      const response = await fetch(`${endpoint}?${params}`, {
+      const params = new URLSearchParams();
+      
+      params.append('type', filters.type);
+      params.append('page', filters.page.toString());
+      params.append('page_size', filters.pageSize.toString());
+      
+      if (filters.search) {
+        params.append('search', filters.search);
+      }
+      
+      if (filters.tournamentName) {
+        params.append('tournament_name', filters.tournamentName);  // Usar tournament_name en lugar de tournament_id
+      }
+      
+      if (filters.leagueId) {
+        params.append('league_id', filters.leagueId);
+      }
+
+      // Ordenamiento por rating descendente
+      params.append('ordering', '-rating');
+
+      const fetchUrl: string = filters.type === 'tournament'
+        ? `${this.baseURL}/tournaments/${filters.tournamentName}/players/?${params.toString()}`
+        : (filters.type === 'league'
+          ? `${this.baseURL}/leagues/${filters.leagueId}/players/?${params.toString()}`
+          : `${this.baseURL}/players/?${params.toString()}`);
+
+      const response = await fetch(fetchUrl, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -31,98 +53,9 @@ class PlayersService {
       }
 
       const data = await response.json();
-      
-      // Handle different response formats
-      let results: Player[] = [];
-      
-      if (filters.type === 'tournament') {
-        // For tournament players, we get TournamentPlayer objects
-        results = data.results ? data.results.map((tp: any) => ({
-          id: tp.player?.id || tp.id,
-          name: tp.player?.name || tp.name,
-          rating: tp.rating || tp.player?.rating || 1500,
-          rd: tp.player?.rd || 350,
-          sigma: tp.player?.sigma || 0.06,
-          matches_played: tp.player?.matches_played || 0,
-          matches_won: tp.player?.matches_won || 0,
-          matches_drawn: tp.player?.matches_drawn || 0,
-          matches_lost: tp.player?.matches_lost || 0,
-          last_tendency: tp.player?.last_tendency || 0,
-        })) : data.map((tp: any) => ({
-          id: tp.player?.id || tp.id,
-          name: tp.player?.name || tp.name,
-          rating: tp.rating || tp.player?.rating || 1500,
-          rd: tp.player?.rd || 350,
-          sigma: tp.player?.sigma || 0.06,
-          matches_played: tp.player?.matches_played || 0,
-          matches_won: tp.player?.matches_won || 0,
-          matches_drawn: tp.player?.matches_drawn || 0,
-          matches_lost: tp.player?.matches_lost || 0,
-          last_tendency: tp.player?.last_tendency || 0,
-        }));
-      } else {
-        // For global players, we get Player objects directly
-        results = data.results || data;
-      }
-
-      return {
-        results,
-        count: data.count || data.length || 0,
-        next: data.next || null,
-        previous: data.previous || null,
-      };
+      return data;
     } catch (error) {
       console.error('Error fetching player ranking:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get tournaments for a league
-   */
-  async getLeagueTournaments(leagueId: string): Promise<any[]> {
-    try {
-      const response = await fetch(`${this.baseURL}/tournaments/`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ league_id: leagueId }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching league tournaments:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get tournament players (TournamentPlayer objects)
-   */
-  async getTournamentPlayers(tournamentId: string): Promise<any[]> {
-    try {
-      const response = await fetch(`${this.baseURL}/tournaments/${tournamentId}/players/`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ tournament_id: tournamentId }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching tournament players:', error);
       throw error;
     }
   }
@@ -152,59 +85,51 @@ class PlayersService {
   }
 
   /**
-   * Build the appropriate endpoint based on ranking type
+   * Get tournaments for a league
    */
-  private buildRankingEndpoint(filters: RankingFilters): string {
-    switch (filters.type) {
-      case 'tournament':
-        if (!filters.tournamentId) {
-          throw new Error('Tournament ID is required for tournament ranking');
-        }
-        // Use the tournament players endpoint
-        return `${this.baseURL}/tournaments/${filters.tournamentId}/players`;
-      
-      case 'league':
-        if (!filters.leagueId) {
-          throw new Error('League ID is required for league ranking');
-        }
-        // For league rankings, we'll need to aggregate tournament players
-        // For now, return the players endpoint with league filter
-        return `${this.baseURL}/players`;
-      
-      case 'global':
-      default:
-        return `${this.baseURL}/players`;
+  async getLeagueTournaments(leagueId: string): Promise<any[]> {
+    try {
+      const response = await fetch(`${this.baseURL}/tournaments/?league=${leagueId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching league tournaments:', error);
+      throw error;
     }
   }
 
   /**
-   * Build query parameters for the API request
+   * Get tournament players (TournamentPlayer objects)
    */
-  private buildQueryParams(filters: RankingFilters): string {
-    const params = new URLSearchParams();
+  async getTournamentPlayers(tournamentId: string): Promise<any[]> {
+    try {
+      const response = await fetch(`${this.baseURL}/tournaments/${tournamentId}/players/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-    // Pagination
-    if (filters.page > 1) {
-      params.append('page', filters.page.toString());
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching tournament players:', error);
+      throw error;
     }
-    if (filters.pageSize !== 20) {
-      params.append('page_size', filters.pageSize.toString());
-    }
-
-    // Search
-    if (filters.search) {
-      params.append('search', filters.search);
-    }
-
-    // League filter for league rankings
-    if (filters.type === 'league' && filters.leagueId) {
-      params.append('league_id', filters.leagueId);
-    }
-
-    // Ordering (always by rating DESC)
-    params.append('ordering', '-rating');
-
-    return params.toString();
   }
 }
 

@@ -3,6 +3,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/authHook';
 import authService from '../../services/authService';
 import Environment from '../../config/environment';
+import { 
+  BsShieldCheck, 
+  BsEye, 
+  BsEyeSlash, 
+  BsCheckCircle,
+  BsExclamationTriangle,
+  BsPerson,
+  BsEnvelope,
+  BsLock
+} from 'react-icons/bs';
 
 interface FormData {
   username: string;
@@ -44,7 +54,7 @@ export const SignUp: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Redirect if already authenticated - use useCallback to prevent infinite loops
+  // Redirect if already authenticated
   const handleAuthRedirect = useCallback(() => {
     if (isAuthenticated && !loading) {
       navigate('/');
@@ -55,12 +65,12 @@ export const SignUp: React.FC = () => {
     handleAuthRedirect();
   }, [handleAuthRedirect]);
 
-  // Debug logging - only once
+  // Debug logging
   useEffect(() => {
     if (Environment.debug) {
       console.log('SignUp component mounted');
     }
-  }, []); // Empty dependency array - runs only once
+  }, []);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -155,7 +165,6 @@ export const SignUp: React.FC = () => {
     setErrors({});
 
     try {
-      // Use the centralized auth service
       await authService.register({
         username: formData.username,
         email: formData.email,
@@ -164,7 +173,7 @@ export const SignUp: React.FC = () => {
         last_name: formData.lastName,
       });
 
-      // Registration successful, redirect to login with success message
+      // Registration successful
       navigate('/auth/signin', {
         state: { 
           message: 'Cuenta creada exitosamente. Por favor inicia sesión.' 
@@ -197,7 +206,7 @@ export const SignUp: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-indigo-600">
-            <span className="text-xl font-bold text-white">MTG</span>
+            <BsShieldCheck className="w-6 h-6 text-white" />
           </div>
           <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
             Crear Cuenta
@@ -216,7 +225,10 @@ export const SignUp: React.FC = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {errors.general && (
             <div className="bg-red-50 border border-red-200 rounded-md p-4">
-              <p className="text-sm text-red-600">{errors.general}</p>
+              <div className="flex">
+                <BsExclamationTriangle className="h-5 w-5 text-red-400" />
+                <p className="ml-3 text-sm text-red-600">{errors.general}</p>
+              </div>
             </div>
           )}
 
@@ -225,6 +237,7 @@ export const SignUp: React.FC = () => {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                  <BsPerson className="inline w-4 h-4 mr-1" />
                   Nombre
                 </label>
                 <input
@@ -248,6 +261,7 @@ export const SignUp: React.FC = () => {
 
               <div>
                 <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                  <BsPerson className="inline w-4 h-4 mr-1" />
                   Apellido
                 </label>
                 <input
@@ -273,6 +287,7 @@ export const SignUp: React.FC = () => {
             {/* Username */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                <BsPerson className="inline w-4 h-4 mr-1" />
                 Nombre de Usuario
               </label>
               <input
@@ -297,6 +312,7 @@ export const SignUp: React.FC = () => {
             {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <BsEnvelope className="inline w-4 h-4 mr-1" />
                 Email
               </label>
               <input
@@ -321,6 +337,7 @@ export const SignUp: React.FC = () => {
             {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <BsLock className="inline w-4 h-4 mr-1" />
                 Contraseña
               </label>
               <div className="mt-1 relative">
@@ -344,14 +361,9 @@ export const SignUp: React.FC = () => {
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                    </svg>
+                    <BsEyeSlash className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                   ) : (
-                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
+                    <BsEye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                   )}
                 </button>
               </div>
@@ -363,6 +375,7 @@ export const SignUp: React.FC = () => {
             {/* Confirm Password */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                <BsLock className="inline w-4 h-4 mr-1" />
                 Confirmar Contraseña
               </label>
               <div className="mt-1 relative">
@@ -386,14 +399,9 @@ export const SignUp: React.FC = () => {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                    </svg>
+                    <BsEyeSlash className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                   ) : (
-                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
+                    <BsEye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                   )}
                 </button>
               </div>
@@ -413,13 +421,13 @@ export const SignUp: React.FC = () => {
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                 disabled={isSubmitting}
               />
-              <label htmlFor="acceptTerms" className="ml-2 block text-sm text-gray-900">
+              <label htmlFor="acceptTerms" className="ml-2 flex items-center text-sm text-gray-900">
                 Acepto los{' '}
-                <Link to="/terms" className="text-indigo-600 hover:text-indigo-500">
+                <Link to="/terms" className="text-indigo-600 hover:text-indigo-500 mx-1">
                   términos y condiciones
                 </Link>{' '}
                 y la{' '}
-                <Link to="/privacy" className="text-indigo-600 hover:text-indigo-500">
+                <Link to="/privacy" className="text-indigo-600 hover:text-indigo-500 ml-1">
                   política de privacidad
                 </Link>
               </label>
@@ -445,6 +453,7 @@ export const SignUp: React.FC = () => {
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
               )}
+              <BsPerson className="w-5 h-5 mr-2" />
               {isSubmitting ? 'Creando Cuenta...' : 'Crear Cuenta'}
             </button>
           </div>
