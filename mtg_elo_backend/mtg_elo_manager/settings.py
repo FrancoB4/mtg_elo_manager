@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from datetime import timedelta
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,10 +22,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-+g*i9_mtk@k9xhu*_!&a)(p%(gqh)k-vji-h43+jduznx9ms2)'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-+g*i9_mtk@k9xhu*_!&a)(p%(gqh)k-vji-h43+jduznx9ms2)')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = []
 
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
     # Project Apps
     'apps.authentication.apps.AuthenticationConfig',
     'corsheaders',
+    'apps.core.apps.CoreConfig',
     'apps.players.apps.PlayersConfig',
     'apps.tournaments.apps.TournamentsConfig',
     'apps.decks.apps.DecksConfig',
@@ -87,8 +89,12 @@ WSGI_APPLICATION = 'mtg_elo_manager.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'data/db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DATABASE_ELO_MANAGER_NAME', default='mtg_elo_manager'),
+        'USER': config('DATABASE_ELO_MANAGER_USER', default='mtg_elo_manager'),
+        'PASSWORD': config('DATABASE_ELO_MANAGER_PASSWORD', default='123456789'),
+        'HOST': config('DATABASE_ELO_MANAGER_HOST', default='127.0.0.1'),
+        'PORT': config('DATABASE_ELO_MANAGER_PORT', default='5432'),
     }
 }
 
@@ -152,7 +158,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS': 'apps.core.paginators.CustomPageNumberPagination',
     'PAGE_SIZE': 20
 }
 

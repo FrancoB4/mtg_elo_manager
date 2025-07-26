@@ -3,7 +3,7 @@ from datetime import date as da
 
 from apps.leagues.models import League, LeaguePlayer
 from apps.tournaments.models import Match, Tournament
-from .helper import Rating, get_games_won_per_player, calculate_swiss_rounds
+from .helper import Rating, get_games_won_per_player, calculate_swiss_rounds, sum_bo3_results
 from apps.players.models import Player
 from django.db import transaction
 
@@ -176,7 +176,7 @@ class Glicko2Service(object):
         expected_score = (expected_score1 + expected_score2) / 2
         return 2 * (0.5 - abs(0.5 - expected_score))
 
-    def rate_1vs1(self, p1: Player | None, p2: Player | None, games: list[int | None], tournament: Tournament, round_number: int | None = None) -> Match | None:
+    def rate_1vs1(self, p1: Player | None, p2: Player | None, p1_league: LeaguePlayer | None, p2_league: LeaguePlayer | None, league: League | None, games: list[int | None], tournament: Tournament, round_number: int | None = None) -> Match | None:
         """_summary_
 
         Args:
@@ -186,13 +186,8 @@ class Glicko2Service(object):
             tournament (int): The tournament ID.
         """
         with transaction.atomic():
-            league = tournament.league
-            
             name_p1 = p1.name if p1 else 'Bye'
             name_p2 = p2.name if p2 else 'Bye'
-            
-            p1_league = LeaguePlayer.objects.get_or_create(player=p1, league=league)[0] if p1 else None
-            p2_league = LeaguePlayer.objects.get_or_create(player=p2, league=league)[0] if p2 else None
             
             match = tournament.create_match(
                 player1=p1,
@@ -204,12 +199,21 @@ class Glicko2Service(object):
             p1_tournament = tournament.get_or_create_tournament_rating(player=p1)[0] if p1 else None
             p2_tournament = tournament.get_or_create_tournament_rating(player=p2)[0] if p2 else None
             
-            if not p1 or not p2 or not p1_league or not p2_league or not p1_tournament or not p2_tournament:
+            if not p1 or not p2 or (league and not p1_league) or (league and not p2_league) or not p1_tournament or not p2_tournament: # type: ignore
                 return
             
-            if league:
-                league._update_matches_played(p1, p2, games)
+            result = sum_bo3_results(games)
             
+            if league and p1_league and p2_league: # type: ignore
+                p1_league.update_matches_played(result)
+                p2_league.update_matches_played(-result)
+
+            p1_tournament.update_matches_played(result)
+            p2_tournament.update_matches_played(-result)
+
+            p1.update_matches_played(result)
+            p2.update_matches_played(-result)
+
             r1 = self.create_rating(name_p1, p1.rating, p1.rd, p1.sigma)
             r2 = self.create_rating(name_p2, p2.rating, p2.rd, p2.sigma)
             
@@ -218,19 +222,20 @@ class Glicko2Service(object):
             r2_aux = self.create_rating(name_p2, p2.rating, p2.rd, p2.sigma)
             
             # League ratings
-            r1_league_aux = self.create_rating(
-                name_p1, p1_league.rating, p1_league.rd, p1_league.sigma
-            )
-            r2_league_aux = self.create_rating(
-                name_p2, p2_league.rating, p2_league.rd, p2_league.sigma
-            )
-            
-            r1_league = self.create_rating(
-                name_p1, p1_league.rating, p1_league.rd, p1_league.sigma
-            )
-            r2_league = self.create_rating(
-                name_p2, p2_league.rating, p2_league.rd, p2_league.sigma
-            )
+            if league and p1_league and p2_league: # type: ignore
+                r1_league_aux = self.create_rating(
+                    name_p1, p1_league.rating, p1_league.rd, p1_league.sigma
+                )
+                r2_league_aux = self.create_rating(
+                    name_p2, p2_league.rating, p2_league.rd, p2_league.sigma
+                )
+                
+                r1_league = self.create_rating(
+                    name_p1, p1_league.rating, p1_league.rd, p1_league.sigma
+                )
+                r2_league = self.create_rating(
+                    name_p2, p2_league.rating, p2_league.rd, p2_league.sigma
+                )
             
             
             # Tournament ratings
@@ -254,32 +259,36 @@ class Glicko2Service(object):
                 if result == 1:
                     p1_series['historic'].append((Rating.WIN, r2_aux))
                     p2_series['historic'].append((Rating.LOSS, r1_aux))
-                    p1_series['league'].append((Rating.WIN, r2_league_aux))
-                    p2_series['league'].append((Rating.LOSS, r1_league_aux))
+                    if league and p1_league and p2_league and r1_league_aux and r2_league_aux: # type: ignore
+                        p1_series['league'].append((Rating.WIN, r2_league_aux))
+                        p2_series['league'].append((Rating.LOSS, r1_league_aux))
                     p1_series['tournament'].append((Rating.WIN, r2_tournament_aux))
                     p2_series['tournament'].append((Rating.LOSS, r1_tournament_aux))
                 
                 elif result == 0:
                     p1_series['historic'].append((Rating.DRAW, r2_aux))
                     p2_series['historic'].append((Rating.DRAW, r1_aux))
-                    p1_series['league'].append((Rating.DRAW, r2_league_aux))
-                    p2_series['league'].append((Rating.DRAW, r1_league_aux))
+                    if league and p1_league and p2_league and r1_league_aux and r2_league_aux: # type: ignore
+                        p1_series['league'].append((Rating.DRAW, r2_league_aux))
+                        p2_series['league'].append((Rating.DRAW, r1_league_aux))
                     p1_series['tournament'].append((Rating.DRAW, r2_tournament_aux))
                     p2_series['tournament'].append((Rating.DRAW, r1_tournament_aux))
                 
                 elif result == -1:
                     p1_series['historic'].append((Rating.LOSS, r2_aux))
                     p2_series['historic'].append((Rating.WIN, r1_aux))
-                    p1_series['league'].append((Rating.LOSS, r2_league_aux))
-                    p2_series['league'].append((Rating.WIN, r1_league_aux))
+                    if league and p1_league and p2_league and r1_league_aux and r2_league_aux: # type: ignore
+                        p1_series['league'].append((Rating.LOSS, r2_league_aux))
+                        p2_series['league'].append((Rating.WIN, r1_league_aux))
                     p1_series['tournament'].append((Rating.LOSS, r2_tournament_aux))
                     p2_series['tournament'].append((Rating.WIN, r1_tournament_aux))
 
             p1.update_stats(self.rate(r1, p1_series['historic']))
             p2.update_stats(self.rate(r2, p2_series['historic']))
 
-            p1_league.update_stats(self.rate(r1_league, p1_series['league']))
-            p2_league.update_stats(self.rate(r2_league, p2_series['league']))
+            if league and p1_league and p2_league and r1_league and r2_league: # type: ignore
+                p1_league.update_stats(self.rate(r1_league, p1_series['league']))
+                p2_league.update_stats(self.rate(r2_league, p2_series['league']))
             
             p1_tournament.update_stats(self.rate(r1_tournament, p1_series['tournament']))
             p2_tournament.update_stats(self.rate(r2_tournament, p2_series['tournament']))
@@ -313,10 +322,10 @@ class Glicko2Service(object):
                 p1 = Player.objects.get_or_create(name=name_p1)[0] if name_p1 != 'Bye' else None
                 p2 = Player.objects.get_or_create(name=name_p2)[0] if name_p2 != 'Bye' else None
                 
-                self.rate_1vs1(p1, p2, games, tournament)
-                
                 p1_league = LeaguePlayer.objects.get_or_create(player=p1, league=league)[0] if p1 else None
                 p2_league = LeaguePlayer.objects.get_or_create(player=p2, league=league)[0] if p2 else None
+                
+                self.rate_1vs1(p1, p2, p1_league, p2_league, league, games, tournament)
                 
                 if p1 is not None and name_p1 not in players_start_ratings.keys():
                     players_start_ratings[name_p1] = p1.rating
@@ -339,8 +348,8 @@ class Glicko2Service(object):
                     r = self.rate(r, [])
                     player.update_stats(r)
                     
-            for league_player in LeaguePlayer.objects.filter(league=league, player__id__in=players_ids):
-                league_player.determine_last_tendency(players_start_ratings.get(league_player.player.name, league_player.rating))
+            for league_player in LeaguePlayer.objects.filter(league=league):
+                league_player.determine_last_tendency(league_players_start_ratings.get(league_player.player.name, league_player.rating))
                 
                 if league_player.player.id not in players_ids: # type: ignore
                     r = self.create_rating(

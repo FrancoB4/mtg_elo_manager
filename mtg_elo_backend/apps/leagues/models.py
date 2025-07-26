@@ -24,39 +24,7 @@ class League(models.Model):
         'end date', 
         null=True, 
         help_text='The date when the league ends.'
-    )
-    
-    def _update_matches_played(self, p1: Player, p2: Player, games: list[int|None]) -> None:
-        result = sum_bo3_results(games)
-        
-        p1_league_player = LeaguePlayer.objects.get_or_create(player=p1, league=self)[0]
-        p2_league_player = LeaguePlayer.objects.get_or_create(player=p2, league=self)[0]
-        
-        p1_league_player.matches_played += 1
-        p2_league_player.matches_played += 1
-        p1.matches_played += 1
-        p2.matches_played += 1
-        
-        if result > 0:
-            p1_league_player.matches_won += 1
-            p2_league_player.matches_lost += 1
-            p1.matches_won += 1
-            p2.matches_lost += 1
-        elif result < 0:
-            p1_league_player.matches_lost += 1
-            p2_league_player.matches_won += 1
-            p1.matches_lost += 1
-            p2.matches_won += 1
-        else:
-            p1_league_player.matches_drawn += 1
-            p2_league_player.matches_drawn += 1
-            p1.matches_drawn += 1
-            p2.matches_drawn += 1
-            
-        p1.save()
-        p2.save()
-        p1_league_player.save()
-        p2_league_player.save()         
+    )    
     
     def __str__(self) -> str:
         return f'{self.name}'
@@ -83,4 +51,4 @@ class LeaguePlayer(BaseRating):
     
     class Meta: # type: ignore
         unique_together = ('player', 'league')
-        ordering = ['player__name', 'league__name']
+        ordering = ['-rating', 'league__name', 'player__name']

@@ -1,8 +1,8 @@
 from django.db.models import Q
 from django.db import models, transaction
-from ..players.models import Player
+from ..players.models import Player, BaseRating
 from ..decks.models import PlayerDeck
-from services.helper import Rating
+from services.helper import Rating, sum_bo3_results
 
 # Create your models here.
 class Tournament(models.Model):
@@ -163,7 +163,7 @@ class Match(models.Model):
         ordering = ['round__tournament__date', 'round__number']
         
         
-class TournamentPlayer(models.Model):
+class TournamentPlayer(BaseRating):
     tournament = models.ForeignKey(
         Tournament, 
         on_delete=models.CASCADE, related_name='ratings', 
@@ -174,29 +174,9 @@ class TournamentPlayer(models.Model):
         on_delete=models.CASCADE, related_name='ratings', 
         help_text='The player to whom this rating belongs.'
     )
-    rating = models.FloatField(
-        'rating', null=False, default=Rating.DEFAULT_RATING,
-        help_text='The rating of the player in the tournament.'
-    )
-    rd = models.FloatField(
-        'RD', null=False, default=Rating.DEFAULT_RD,
-        help_text='Rating Deviation of the player in the tournament.'
-    )
-    sigma = models.FloatField(
-        'vol',
-        null=False, default=Rating.SIGMA,
-        help_text='The volatility of the player\'s rating in the tournament.'
-    )
-    
-    def update_stats(self, rating: Rating) -> None:
-        """Update the rating of the player in the tournament."""
-        self.rating = rating.rating
-        self.rd = rating.rd
-        self.sigma = rating.sigma
-        self.save()
     
     def __str__(self) -> str:
         return f'{self.player.name:<35}|{self.rating:^6}|{round(self.rd, 8):^14}|'
     
-    class Meta:
+    class Meta: # type: ignore
         ordering = ['tournament__date', '-rating', 'rd']

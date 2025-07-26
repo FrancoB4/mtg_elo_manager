@@ -92,6 +92,22 @@ class BaseRating(models.Model):
         self.sigma = rating.sigma
         
         self.save()
+        
+    def update_matches_played(self, result: int) -> None:
+        """
+        Update the matches played, won, drawn, and lost based on the results of the games.
+
+        :param result: An integer representing the outcome of the game.
+        """
+        self.matches_played += 1
+        if result >= 0:
+            self.matches_won += 1
+        elif result <= 0:
+            self.matches_lost += 1
+        elif result == 0:
+            self.matches_drawn += 1
+        
+        self.save()
     
     def __str__(self) -> str:
         return f'{self.name:<35}|{self.rating:^6}|{self.get_last_tendency_display():^11}|{round(self.rd, 8):^14}|{self.matches_played:^9}' # type: ignore

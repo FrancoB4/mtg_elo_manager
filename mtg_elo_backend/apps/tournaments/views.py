@@ -148,14 +148,26 @@ class TournamentPlayerViewSet(viewsets.ModelViewSet):
         """
         List all tournament players.
         """
-        if request.data.get('tournament_id'):
-            tournament_id = request.data['tournament_id']
-            self.queryset = self.queryset.filter(tournament__id=tournament_id)
-        elif request.data.get('player_id'):
-            player_id = request.data['player_id']
-            self.queryset = self.queryset.filter(player__id=player_id)
-        else:
-            raise ValueError("Either 'tournament_id' or 'player_id' must be provided in the request data.")
-        queryset = self.get_queryset()
+
+        tournament_name = kwargs.get('tournament_name', request.query_params.get('tournament_name', None))
+        player_id = kwargs.get('player_id', request.query_params.get('player_id', None))
+        
+        if not tournament_name and not player_id:
+            return Response({'error': 'Either tournament_name or player_id must be provided'}, status=400)
+
+        filters = []
+        if tournament_name:
+            filters.append(Q(tournament__name=tournament_name))
+        if player_id:
+            filters.append(Q(player__id=player_id))
+        
+        queryset = self.get_queryset().filter(*filters).order_by('-rating', '-rd')
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
         serializer = self.get_serializer(queryset, many=True)
+
         return Response(serializer.data)

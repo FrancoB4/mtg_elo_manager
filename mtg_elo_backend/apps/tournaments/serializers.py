@@ -17,10 +17,13 @@ class TournamentPlayerSerializer(serializers.ModelSerializer):
     """
     Serializer for TournamentPlayer model.
     """
+    name = serializers.CharField(source='player.name', read_only=True)
+    
+    
     class Meta:
         model = TournamentPlayer
-        fields = ('id', 'tournament', 'player', 'rating')
-        read_only_fields = ('id', 'rating')
+        fields = ('id', 'player', 'name', 'rating', 'rd', 'matches_won', 'matches_drawn', 'matches_lost')
+        read_only_fields = ('id', 'rating', 'player', 'rd', 'name')
 
 
 class MatchSerializer(serializers.ModelSerializer):
