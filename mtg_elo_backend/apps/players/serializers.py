@@ -8,5 +8,5 @@ class PlayerSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Player
-        fields = ('id', 'name', 'rating', 'last_tendency', 'rd', 'sigma')
-        read_only_fields = ('id', 'rating', 'last_tendency', 'rd', 'sigma')
+        fields = ('id', 'name', 'rating', 'last_tendency', 'rd', 'sigma', 'matches_won', 'matches_drawn', 'matches_lost')
+        read_only_fields = ('id', 'rating', 'last_tendency', 'rd', 'sigma', 'matches_won', 'matches_drawn', 'matches_lost')
