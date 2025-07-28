@@ -7,7 +7,7 @@ import {
   BsShieldCheck, 
   BsEye, 
   BsEyeSlash, 
-  BsCheckCircle,
+  // BsCheckCircle,
   BsExclamationTriangle,
   BsPerson,
   BsEnvelope,

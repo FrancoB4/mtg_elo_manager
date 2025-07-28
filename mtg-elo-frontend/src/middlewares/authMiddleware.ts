@@ -1,8 +1,8 @@
-import authService from '../services/authService';
+// import authService from '../services/authService';
 
-interface EnhancedRequestInit extends RequestInit {
-  credentials: RequestCredentials;
-}
+// interface EnhancedRequestInit extends RequestInit {
+//   credentials: RequestCredentials;
+// }
 
 class AuthMiddleware {
   private originalFetch: typeof fetch;
@@ -192,4 +192,5 @@ class AuthMiddleware {
   }
 }
 
-export default new AuthMiddleware();
+const authMiddleware = new AuthMiddleware();
+export default authMiddleware;

@@ -19,11 +19,13 @@ class Command(BaseCommand):
         
         if top_ten_flag:
             try:
-                export_service.csv_export_top_ten()
+                exported_file = export_service.csv_export_top_ten()
+                self.stdout.write(self.style.SUCCESS(f'Top ten exported to: {exported_file}'))
             except Exception as e:
                 raise CommandError(f'An error occurred while exporting the top ten players: {e}')
         else:
             try:
-                export_service.csv_export()
+                exported_file = export_service.csv_export()
+                self.stdout.write(self.style.SUCCESS(f'Full ranking exported to: {exported_file}'))
             except Exception as e:
-                raise CommandError(f'An error occurred while exporting the top ten players: {e}')
+                raise CommandError(f'An error occurred while exporting the player rankings: {e}')

@@ -1,6 +1,7 @@
 from apps.players.models import Player
 from datetime import datetime as dt
 from django.core.management.base import CommandError
+from .file_service import FileService
 
 class ExportService:    
     def table_export(self, players = None,
@@ -75,12 +76,17 @@ class ExportService:
     def csv_export(self, players = None):
         if players is None:
             players = Player.objects.all()
+        
+        filename = f"ranking_{dt.now().strftime('%d-%m-%Y_%H-%M-%S')}.csv"
+        file_path = FileService.get_export_file_path(filename)
             
-        with open(f'exports/ranking_{dt.now().strftime('%d/%m/%Y')}.csv', 'wt') as fm:
-            fm.write('Position,Player,Elo,Rating deviation (RD),Matches played,Matches won,Matches loss,Matches drawn\n')
+        with open(file_path, 'wt') as fm:
+            fm.write('Position,Player,Elo,Rating deviation (RD),Tendency,Matches played,Matches won,Matches loss,Matches drawn\n')
             
             for i, player in enumerate(players):
-                fm.write(f'{i+1},{player.name},{player.rating},{player.rd},{player.get_last_tendency_display()}{player.matchs_played},{player.matches_won},{player.matches_lost},{player.matches_drawn}\n') # type: ignore
+                fm.write(f'{i+1},{player.name},{player.rating},{player.rd},{player.get_last_tendency_display()},{player.matches_played},{player.matches_won},{player.matches_lost},{player.matches_drawn}\n') # type: ignore
+        
+        return file_path
     
     def csv_export_top_ten(self):
-        self.csv_export(Player.objects.all()[:10])
+        return self.csv_export(Player.objects.all()[:10])

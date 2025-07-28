@@ -176,7 +176,9 @@ class Glicko2Service(object):
         expected_score = (expected_score1 + expected_score2) / 2
         return 2 * (0.5 - abs(0.5 - expected_score))
 
-    def rate_1vs1(self, p1: Player | None, p2: Player | None, p1_league: LeaguePlayer | None, p2_league: LeaguePlayer | None, league: League | None, games: list[int | None], tournament: Tournament, round_number: int | None = None) -> Match | None:
+    def rate_1vs1(self, p1: Player | None, p2: Player | None,games: list[int | None], tournament: Tournament,
+                  p1_league: LeaguePlayer | None = None, p2_league: LeaguePlayer | None = None,
+                  league: League | None = None, round_number: int | None = None) -> Match | None:
         """_summary_
 
         Args:
@@ -324,9 +326,9 @@ class Glicko2Service(object):
                 
                 p1_league = LeaguePlayer.objects.get_or_create(player=p1, league=league)[0] if p1 else None
                 p2_league = LeaguePlayer.objects.get_or_create(player=p2, league=league)[0] if p2 else None
-                
-                self.rate_1vs1(p1, p2, p1_league, p2_league, league, games, tournament)
-                
+
+                self.rate_1vs1(p1, p2, games, tournament, p1_league, p2_league, league)
+
                 if p1 is not None and name_p1 not in players_start_ratings.keys():
                     players_start_ratings[name_p1] = p1.rating
                     if p1_league is not None and name_p1 not in league_players_start_ratings.keys():

@@ -30,9 +30,9 @@ interface DisableTwoFAResponse {
   detail: string;
 }
 
-interface RequestOptions extends RequestInit {
-  credentials: RequestCredentials;
-}
+// interface RequestOptions extends RequestInit {
+//   credentials: RequestCredentials;
+// }
 
 interface RegisterRequest {
   username: string;
@@ -255,7 +255,8 @@ class AuthService {
   }
 }
 
-export default new AuthService();
+const authService = new AuthService();
+export default authService;
 export type { 
   User, 
   AuthResponse, 

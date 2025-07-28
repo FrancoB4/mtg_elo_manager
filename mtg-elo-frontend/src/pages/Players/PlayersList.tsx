@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom';
 import { PlayerCard } from './components/PlayerCard';
 import { PlayersTable } from './components/PlayersTable';
@@ -54,11 +54,6 @@ export const PlayersList: React.FC = () => {
     search: searchParams.get('search') || '',
   });
 
-  // Load players when filters change
-  useEffect(() => {
-    loadPlayers();
-  }, [filters]);
-
   // Update URL when filters change (only for main rankings page)
   useEffect(() => {
     if (!window.location.pathname.includes('/tournaments/') && !window.location.pathname.includes('/leagues/')) {
@@ -88,7 +83,7 @@ export const PlayersList: React.FC = () => {
     localStorage.setItem('playersListView', view);
   };
 
-  const loadPlayers = async () => {
+  const loadPlayers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -102,7 +97,12 @@ export const PlayersList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
+
+  // Load players when filters change
+  useEffect(() => {
+    loadPlayers();
+  }, [loadPlayers]);
 
   const handleFiltersChange = (newFilters: Partial<FilterType>) => {
     setFilters(prev => ({

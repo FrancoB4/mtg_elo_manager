@@ -11,6 +11,9 @@ from apps.tournaments.serializers import TournamentPlayerSerializer, MatchSerial
 from apps.users import permissions
 
 from services.glicko2_service import Glicko2Service
+from services.file_service import FileService
+from django.http import HttpResponse
+import os
 
 # Create your views here.
 class TournamentViewSet(viewsets.ModelViewSet):
@@ -57,12 +60,51 @@ class EndTournamentView(APIView):
 
     def post(self, _, *args, **kwargs):
         tournament_id = kwargs.get('tournament_id')
+        if not tournament_id:
+            return Response({'error': 'Tournament ID is required'}, status=400)
         try:
             tournament = Tournament.objects.get(id=tournament_id)
             tournament.set_winner()
             tournament.clean_empty_rounds()
             tournament.export_to_csv()
             return Response({'status': 'Tournament ended successfully'}, status=200)
+        except Tournament.DoesNotExist:
+            return Response({'error': 'Tournament not found'}, status=404)
+        
+
+class TournamentCSVExportView(APIView):
+    """
+    View to export tournament data to CSV.
+    """
+    permission_classes = [AllowAny | permissions.IsTournamentAdmin | permissions.IsLeagueAdmin]
+
+    def get(self, request, *args, **kwargs):
+        tournament_id = kwargs.get('tournament_id')
+        try:
+            tournament = Tournament.objects.get(id=tournament_id)
+            file_path = f"exports/tournaments/{tournament.date.strftime('%Y-%m-%d')}.csv"
+
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as csv_file:
+                    response = HttpResponse(csv_file.read(), content_type='text/csv')
+                    response['Content-Disposition'] = f'attachment; filename="{file_path}"'
+                    response['Content-Length'] = os.path.getsize(file_path)
+                    return response
+            else:
+                # Si el archivo no existe, intentar generarlo
+                try:
+                    tournament.export_to_csv()
+                    # Reintentar la lectura después de generar
+                    if os.path.exists(file_path):
+                        with open(file_path, 'rb') as csv_file:
+                            response = HttpResponse(csv_file.read(), content_type='text/csv')
+                            response['Content-Disposition'] = f'attachment; filename="{file_path}"'
+                            response['Content-Length'] = os.path.getsize(file_path)
+                            return response
+                except Exception as e:
+                    return Response({'error': f'Error generating CSV: {str(e)}'}, status=500)
+                    
+                return Response({'error': 'CSV file not found and could not be generated'}, status=404)
         except Tournament.DoesNotExist:
             return Response({'error': 'Tournament not found'}, status=404)
 
