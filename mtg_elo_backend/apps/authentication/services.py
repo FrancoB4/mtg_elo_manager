@@ -28,7 +28,7 @@ class TwoFactorService:
     
     def get_2fa_enabling_uri(self, user):
         if self.totp is not None:
-            return self.totp.provisioning_uri(name=user.username, issuer_name='Beygoo Backoffice')
+            return self.totp.provisioning_uri(name=user.username, issuer_name='MTG Elo Manager')
         
     def enable_2fa(self):
         if self.user and self.user.otp_secret and not self.user.is_2fa_enabled:
