@@ -1,14 +1,16 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+// import { Link } from 'react-router-dom';
 import { TopPlayersSection } from '../components/TopPlayersSection';
-import { TournamentCard } from '../components/TournamentCard';
-import { StatsOverview } from '../components/StatsOverview';
-import { DeckCard } from '../components/DeckCard';
+// import { TournamentCard } from '../components/TournamentCard';
+import { StatisticsDisplay } from '../components/StatisticsDisplay';
+// import { DeckCard } from '../components/DeckCard';
 import { useAuth } from '../hooks/authHook';
-import { mockTournaments, mockGeneralStats, mockDecks } from '../data/mockData';
+import { useStatistics } from '../hooks/useStatistics';
+// import { mockTournaments, mockDecks } from '../data/mockData';
 
 export const HomePage: React.FC = () => {
     const { user, isAuthenticated, loading } = useAuth();
+    const { statistics, loading: statsLoading, error: statsError } = useStatistics();
 
     if (loading) {
         return (
@@ -54,33 +56,23 @@ export const HomePage: React.FC = () => {
                             <p className="text-xl mb-6 opacity-90">
                                 La plataforma definitiva para gestionar torneos y rankings de Magic: The Gathering
                             </p>
-                            <div className="flex justify-center space-x-4">
-                                <Link
-                                    to="/auth/signup"
-                                    className="bg-white text-indigo-600 hover:bg-gray-100 px-6 py-3 rounded-md font-medium transition-colors"
-                                >
-                                    Comenzar Ahora
-                                </Link>
-                                <Link
-                                    to="/auth/signin"
-                                    className="border-2 border-white text-white hover:bg-white hover:text-indigo-600 px-6 py-3 rounded-md font-medium transition-colors"
-                                >
-                                    Ya tengo cuenta
-                                </Link>
-                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* Stats Overview */}
                 <div className="mb-12">
-                    <StatsOverview stats={mockGeneralStats} />
+                    <StatisticsDisplay 
+                        statistics={statistics}
+                        loading={statsLoading}
+                        error={statsError}
+                    />
                 </div>
 
                 {/* Top Players - Componente embebido */}
                 <TopPlayersSection />
 
-                {/* Decks */}
+                {/* Decks
                 <div className="mb-12">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-2xl font-semibold text-gray-800">Mazos Destacados</h2>
@@ -98,9 +90,9 @@ export const HomePage: React.FC = () => {
                             <DeckCard key={deck.id} deck={deck} />
                         ))}
                     </div>
-                </div>
+                </div> */}
 
-                {/* Recent Tournaments */}
+                {/* Recent Tournaments
                 <div className="mb-12">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-2xl font-semibold text-gray-800">Torneos Recientes</h2>
@@ -118,9 +110,9 @@ export const HomePage: React.FC = () => {
                             <TournamentCard key={tournament.id} tournament={tournament} />
                         ))}
                     </div>
-                </div>
+                </div> */}
 
-                {/* Call to Action for Non-Authenticated Users */}
+                {/* Call to Action for Non-Authenticated Users
                 {!isAuthenticated && (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
                         <div className="max-w-2xl mx-auto">
@@ -147,9 +139,9 @@ export const HomePage: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                )}
+                )} */}
 
-                {/* Quick Actions for Authenticated Users */}
+                {/* Quick Actions for Authenticated Users
                 {isAuthenticated && (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
                         <h3 className="text-xl font-semibold text-gray-900 mb-6">Acciones Rápidas</h3>
@@ -215,7 +207,7 @@ export const HomePage: React.FC = () => {
                             </Link>
                         </div>
                     </div>
-                )}
+                )} */}
             </div>
         </div>
     );

@@ -1,12 +1,13 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from apps.tournaments.views import MatchViewSet
-from .views import PlayerViewSet
+from .views import GlobalPlayerStatisticsView, PlayerViewSet
 
 router = DefaultRouter()
 router.register(r'(?P<player_id>[^/.]+)/matches', MatchViewSet, basename='player-matches')
 router.register(r'', PlayerViewSet, basename='players')
 
 urlpatterns = [
+    path('statistics/', GlobalPlayerStatisticsView.as_view(), name='global-player-statistics'),
     path('', include(router.urls)),
 ]

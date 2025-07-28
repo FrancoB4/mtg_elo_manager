@@ -27,7 +27,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-+g*i9_mtk@k9xhu*_!&a)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
 # Application definition
@@ -53,7 +53,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'apps.authentication.middlewares.JWTAuthCookieMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    'apps.core.middleware.DynamicCorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -173,15 +173,35 @@ REST_FRAMEWORK = {
 }
 
 # CORS Configuration
-# Configuración CORS
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # React dev server
-    "http://127.0.0.1:3000",
-]
+CORS_ALLOWED_ORIGINS = config(
+    'CORS_ALLOWED_ORIGINS', 
+    default=['http://localhost:3000','http://127.0.0.1:3000'],
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
 
 CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOW_ALL_ORIGINS = True  # Solo para desarrollo
+# Solo para desarrollo - en producción debe ser False
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=DEBUG, cast=bool)
+
+# Patrones de dominios dinámicos para Cloudflare Pages
+def get_cors_patterns():
+    """Obtiene patrones CORS desde variables de entorno y configuración por defecto."""
+    patterns = [
+        r"https://[a-f0-9]{8}\.mtg-elo-manager\.pages\.dev",  # Preview deployments
+        r"https://.*\.mtg-elo-manager\.pages\.dev",            # Cualquier subdominio
+        r"https://mtg-elo-manager\.pages\.dev",                # Dominio principal
+    ]
+    
+    # Agregar patrones desde variables de entorno
+    for i in range(1, 6):  # Hasta 5 patrones personalizados
+        pattern = config(f'CORS_PATTERN_{i}', default=None)
+        if pattern and isinstance(pattern, str):
+            patterns.append(pattern)
+    
+    return patterns
+
+CORS_ALLOWED_ORIGIN_PATTERNS = get_cors_patterns()
 
 # Headers permitidos
 CORS_ALLOW_HEADERS = [

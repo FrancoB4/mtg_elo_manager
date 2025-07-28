@@ -176,7 +176,7 @@ class Glicko2Service(object):
         expected_score = (expected_score1 + expected_score2) / 2
         return 2 * (0.5 - abs(0.5 - expected_score))
 
-    def rate_1vs1(self, p1: Player | None, p2: Player | None,games: list[int | None], tournament: Tournament,
+    def rate_1vs1(self, p1: Player | None, p2: Player | None, games: list[int | None], tournament: Tournament,
                   p1_league: LeaguePlayer | None = None, p2_league: LeaguePlayer | None = None,
                   league: League | None = None, round_number: int | None = None) -> Match | None:
         """_summary_

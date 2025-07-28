@@ -100,13 +100,13 @@ class BaseRating(models.Model):
         :param result: An integer representing the outcome of the game.
         """
         self.matches_played += 1
-        if result >= 0:
+        if result > 0:
             self.matches_won += 1
-        elif result <= 0:
+        elif result < 0:
             self.matches_lost += 1
         elif result == 0:
             self.matches_drawn += 1
-        
+            
         self.save()
     
     def __str__(self) -> str:

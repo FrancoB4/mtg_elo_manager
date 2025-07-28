@@ -1,7 +1,4 @@
 
-from .file_service import FileService
-
-
 class ImportService:
     def _parse_score(self, score: str) -> list[int|None]:
         score = score.strip()
@@ -39,12 +36,7 @@ class ImportService:
     
     def import_tournament_from_csv(self, file_name: str) -> list[tuple[str, str, list[int|None]]]:
         matches = []
-        file_path = FileService.get_import_file_path(file_name)
-        
-        if not FileService.file_exists(file_path):
-            raise FileNotFoundError(f"No se encontró el archivo: {file_path}")
-            
-        with open(file_path, 'r') as file:
+        with open(f'imports/{file_name}.csv', 'r') as file:
             lines = file.readlines()
             for line in lines:
                 if line == '\n':

@@ -1,0 +1,37 @@
+# Comandos para configurar Heroku correctamente
+
+## PASO 1: Deshabilitar DISABLE_COLLECTSTATIC
+heroku config:unset DISABLE_COLLECTSTATIC
+
+## PASO 2: Configurar variables de entorno básicas
+heroku config:set DEBUG=False
+heroku config:set ENVIRONMENT=production
+heroku config:set SECRET_KEY="django-insecure-+g*i9_mtk@k9xhu*_!&a)(p%(gqh)k-vji-h43+jduznx9ms2)"
+
+## PASO 3: Configurar ALLOWED_HOSTS (CAMBIAR por tu dominio real)
+heroku config:set ALLOWED_HOSTS="tu-app-name.herokuapp.com,localhost,127.0.0.1"
+
+## PASO 4: Configurar CORS (CAMBIAR por tu frontend real)
+heroku config:set CORS_ALLOWED_ORIGINS="https://tu-frontend.pages.dev"
+heroku config:set CORS_ALLOW_ALL_ORIGINS=False
+
+## PASO 5: (Opcional) Configurar patrones CORS para Cloudflare
+heroku config:set CORS_PATTERN_1="https://[a-f0-9]{8}\.tu-app\.pages\.dev"
+heroku config:set CORS_PATTERN_2="https://.*\.tu-app\.pages\.dev"
+
+## PASO 6: Verificar configuración
+heroku config
+
+## PASO 7: Redeploy
+git add .
+git commit -m "Fix Heroku configuration for static files and CORS"
+git push heroku master
+
+## PASO 8: Ver logs para verificar
+heroku logs --tail
+
+## NOTAS IMPORTANTES:
+# - Cambia "tu-app-name.herokuapp.com" por tu dominio real de Heroku
+# - Cambia "tu-frontend.pages.dev" por tu dominio real de frontend
+# - Cambia "tu-app" en los patrones CORS por el nombre real de tu app en Cloudflare
+# - El script bin/post_compile se ejecutará automáticamente durante el build

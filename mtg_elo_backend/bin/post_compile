@@ -1,0 +1,24 @@
+#!/bin/bash
+
+echo "=== Post-build script iniciado ==="
+
+# Crear directorios estáticos si no existen
+echo "Creando estructura de directorios..."
+mkdir -p static/imports
+mkdir -p static/exports
+mkdir -p static/exports/tournaments
+
+# Copiar archivos existentes si hay alguno
+echo "Copiando archivos a estructura estática..."
+if [ -d "imports" ]; then
+    cp -r imports/* static/imports/ 2>/dev/null || echo "No hay archivos en imports/"
+fi
+if [ -d "exports" ]; then
+    cp -r exports/* static/exports/ 2>/dev/null || echo "No hay archivos en exports/"
+fi
+
+# Recolectar archivos estáticos
+echo "Recolectando archivos estáticos..."
+python manage.py collectstatic --noinput
+
+echo "=== Post-build script completado ==="
