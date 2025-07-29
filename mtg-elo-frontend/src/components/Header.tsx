@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/authHook';
+import { UserProfileModal } from './UserProfileModal';
 import { 
   BsTrophy, 
   BsBullseye,
@@ -16,6 +17,7 @@ import {
 export const Header: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -115,9 +117,13 @@ export const Header: React.FC = () => {
                   <div className="text-sm text-gray-700">
                     Hola, <span className="font-medium">{user?.username}</span>
                   </div>
-                  <div className="h-8 w-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                  <button
+                    onClick={() => setShowProfileModal(true)}
+                    className="h-8 w-8 bg-indigo-100 hover:bg-indigo-200 rounded-full flex items-center justify-center transition-colors"
+                    title="Ver perfil"
+                  >
                     {renderIcon(BsPersonCircle, "w-5 h-5 text-indigo-600")}
-                  </div>
+                  </button>
                 </div>
                 <button
                   onClick={handleLogout}
@@ -209,6 +215,12 @@ export const Header: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
     </nav>
   );
 };

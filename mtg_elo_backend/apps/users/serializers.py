@@ -11,8 +11,8 @@ class CustomUserSimpleSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CustomUser
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_active')
-        read_only_fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_active')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_2fa_enabled')
+        read_only_fields = ('id',)
         
 
 class CustomUserCreateSerializer(serializers.ModelSerializer):

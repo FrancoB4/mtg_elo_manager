@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/authHook';
+import { PasswordChangeModal } from '../../components/PasswordChangeModal';
 import { BsEye, BsEyeSlash, BsPerson, BsLock } from 'react-icons/bs';
 import Environment from '../../config/environment';
 
@@ -24,7 +25,7 @@ interface LocationState {
 export const SignIn: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated, loading } = useAuth();
+  const { login, isAuthenticated, loading, mustResetPassword, clearMustResetPassword } = useAuth();
   
   const [formData, setFormData] = useState<FormData>({
     username: '',
@@ -146,6 +147,11 @@ export const SignIn: React.FC = () => {
         if (Environment.debug) {
           console.log('2FA required for user:', result.username);
         }
+      } else if (result.mustResetPassword) {
+        if (Environment.debug) {
+          console.log('Password reset required for user:', result.username);
+        }
+        // El modal se mostrará automáticamente porque mustResetPassword será true
       } else if (result.success) {
         if (Environment.debug) {
           console.log('Login successful, redirecting to home');
@@ -175,6 +181,20 @@ export const SignIn: React.FC = () => {
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const handlePasswordChanged = () => {
+    clearMustResetPassword();
+    navigate('/');
+  };
+
+  const handlePasswordChangeCancel = () => {
+    // Para el reset forzoso, no debería poder cancelar
+    // pero manejamos el caso por si acaso
+    if (mustResetPassword) {
+      return;
+    }
+    clearMustResetPassword();
   };
 
   if (loading) {
@@ -361,6 +381,15 @@ export const SignIn: React.FC = () => {
           </div>
         </form>
       </div>
+
+      {/* Password Change Modal */}
+      <PasswordChangeModal
+        isOpen={mustResetPassword}
+        onClose={handlePasswordChangeCancel}
+        onPasswordChanged={handlePasswordChanged}
+        isForced={true}
+        title="Cambio de Contraseña Requerido"
+      />
     </div>
   );
 };

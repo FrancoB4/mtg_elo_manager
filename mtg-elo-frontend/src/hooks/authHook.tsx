@@ -6,16 +6,20 @@ interface LoginResult {
   success?: boolean;
   requires2FA?: boolean;
   username?: string;
+  mustResetPassword?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
+  mustResetPassword: boolean;
   login: (username: string, password: string, twoFactorCode?: string | null) => Promise<LoginResult>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
   checkAuthStatus: () => Promise<void>;
+  clearMustResetPassword: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 interface AuthProviderProps {
@@ -28,6 +32,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [mustResetPassword, setMustResetPassword] = useState<boolean>(false);
 
   useEffect(() => {
     checkAuthStatus();
@@ -70,6 +75,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await authService.verify2FA(username, password, twoFactorCode);
       }
 
+      // Check if password reset is required
+      if (authResult.must_reset_password) {
+        setMustResetPassword(true);
+        return { 
+          success: true, 
+          username: authResult.username, 
+          mustResetPassword: true 
+        };
+      }
+
       // Get user data after successful authentication
       const userData = await authService.getCurrentUser();
       setUser(userData);
@@ -100,14 +115,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return await checkAuthStatus();
   };
 
+  const clearMustResetPassword = (): void => {
+    setMustResetPassword(false);
+  };
+
+  const refreshUser = async (): Promise<void> => {
+    try {
+      const userData = await authService.getCurrentUser();
+      if (userData) {
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isAuthenticated,
     loading,
+    mustResetPassword,
     login,
     logout,
     refreshAuth,
     checkAuthStatus,
+    clearMustResetPassword,
+    refreshUser,
   };
 
   return (

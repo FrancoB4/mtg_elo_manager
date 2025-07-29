@@ -16,6 +16,11 @@ class CustomUser(AbstractUser):
     
     base_role = models.CharField(max_length=50, choices=Role.choices, default=Role.PLAYER, help_text='The base role of the user.')
     
+    must_change_password = models.BooleanField(
+        default=False, 
+        help_text='Indicates if the user must change their password on next login.'
+    )
+    
     def enable_2fa(self):
         self.is_2fa_enabled = True
         self.save()

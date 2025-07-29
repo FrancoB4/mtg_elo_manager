@@ -1,5 +1,6 @@
 from django.db import models
 from services.helper import Rating
+from ..users.models import CustomUser
 
 
 # Create your models here.
@@ -119,4 +120,11 @@ class BaseRating(models.Model):
 class Player(BaseRating):
 
     name = models.CharField('name', max_length=35, null=False, unique=True)
+    user = models.OneToOneField(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='player',
+        null=True, blank=True,
+        help_text='The user associated with this player.'
+    )
     

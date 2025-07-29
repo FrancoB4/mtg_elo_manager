@@ -40,10 +40,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
     # Project Apps
     'apps.authentication.apps.AuthenticationConfig',
-    'corsheaders',
     'apps.core.apps.CoreConfig',
+    'apps.games_and_formats.apps.GamesAndFormatsConfig',
     'apps.players.apps.PlayersConfig',
     'apps.tournaments.apps.TournamentsConfig',
     'apps.decks.apps.DecksConfig',
@@ -225,6 +226,8 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
+
+ENABLE_2FA = config('ENABLE_2FA', default=True, cast=bool)
 
 #: The actual score for win
 WIN = 1.

@@ -1,7 +1,7 @@
 from django.db.models import Q
 from django.db import models, transaction
 from ..players.models import Player, BaseRating
-from ..decks.models import PlayerDeck
+from ..decks.models import Deck
 from services.helper import Rating, sum_bo3_results
 
 # Create your models here.
@@ -140,13 +140,13 @@ class Match(models.Model):
         help_text='The score of player 2 in the match.'
     )
     winner_deck = models.ForeignKey(
-        PlayerDeck,
+        Deck,
         on_delete=models.SET_NULL, null=True,
         related_name='won_matches',
         help_text='The deck used by the winner in the match.'
     )
     looser_deck = models.ForeignKey(
-        PlayerDeck,
+        Deck,
         on_delete=models.SET_NULL, null=True,
         related_name='lost_matches',
         help_text='The deck used by the looser in the match.'

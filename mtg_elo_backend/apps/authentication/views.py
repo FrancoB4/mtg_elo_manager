@@ -49,7 +49,8 @@ class AuthenticateUserAndPasswordView(GenericAPIView):
         
         res = Response({
             'username': user.username,
-            'require_2fa': user.is_2fa_enabled # type: ignore
+            'require_2fa': user.is_2fa_enabled,
+            'must_reset_password': user.must_change_password,
         })
         
         if not user.is_2fa_enabled: # type: ignore
@@ -71,8 +72,8 @@ class Enable2faView(GenericAPIView):
     """
     permission_classes = [permissions.AllowAny]
     
-    def get(self, _, username, format=None):
-        user = CustomUser.objects.filter(username=username).first()
+    def get(self, request, format=None):
+        user = request.user
         if not user:
             return Response({'detail': 'Usuario incorrecto.'}, status=status.HTTP_404_NOT_FOUND)
         
@@ -109,12 +110,12 @@ class Verify2faView(TokenObtainPairView):
         if not tfs.verify_2fa_code(code) and settings.ENABLE_2FA:
             return Response({ 'detail': 'Código invalido.' }, status=status.HTTP_400_BAD_REQUEST)
         
-        if not user.is_2fa_enabled:
-            tfs.enable_2fa()
-        
         serializer = self.get_serializer(data={'username': username, 'password': request.data.get('password', '')})
         serializer.is_valid(raise_exception=True)
         tokens = serializer.validated_data
+        
+        if not user.is_2fa_enabled:
+            tfs.enable_2fa()
         
         res = Response({ 'detail': 'Ok', 'success': True })
         res.set_cookie(
@@ -211,8 +212,7 @@ class ChangePasswordView(GenericAPIView):
             return Response({'error': 'Current password is incorrect.'}, status=400)
         
         user.set_password(new_password)
+        user.must_change_password = False
         user.save()
         
         return Response({'message': 'Password changed successfully.'}, status=200)
-
-

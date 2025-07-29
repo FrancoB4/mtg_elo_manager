@@ -4,13 +4,17 @@ import Environment from '../config/environment';
 interface AuthResponse {
   username: string;
   require_2fa: boolean;
+  must_reset_password?: boolean;
 }
 
 interface User {
   id: number;
   username: string;
   email: string;
+  first_name: string;
+  last_name: string;
   is_superuser: boolean;
+  is_2fa_enabled: boolean;
 }
 
 interface TwoFAResponse {
@@ -27,6 +31,26 @@ interface PasswordChangeResponse {
 }
 
 interface DisableTwoFAResponse {
+  detail: string;
+}
+
+interface ProfileUpdateData {
+  username: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+interface ProfileUpdateResponse {
+  message: string;
+  user: User;
+}
+
+interface Enable2FAResponse {
+  otpauth_uri: string;
+}
+
+interface Verify2FAResponse {
   detail: string;
 }
 
@@ -253,6 +277,228 @@ class AuthService {
       throw error;
     }
   }
+
+  /**
+   * Change user password
+   */
+  async changePassword(oldPassword: string, newPassword: string): Promise<PasswordChangeResponse> {
+    try {
+      if (Environment.debug) {
+        console.log('Attempting password change');
+      }
+
+      const response = await fetch(`${this.authEndpoint}/change-password/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Para usar cookies de autenticación
+        body: JSON.stringify({
+          old_password: oldPassword,
+          new_password: newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || errorData.message || 'Error al cambiar la contraseña');
+      }
+
+      const data = await response.json();
+      
+      if (Environment.debug) {
+        console.log('Password changed successfully');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Change password error:', error);
+      throw error;
+    }
+  }
+
+  // Obtener perfil del usuario
+  async getUserProfile(): Promise<User> {
+    try {
+      // Primero obtenemos el usuario actual para obtener su username
+      const currentUser = await this.getCurrentUser();
+      if (!currentUser) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      const response = await fetch(`${Environment.apiUrl}/users/profile/${currentUser.username}/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || errorData.message || 'Error al obtener el perfil');
+      }
+
+      const data = await response.json();
+      
+      if (Environment.debug) {
+        console.log('Profile retrieved successfully:', data);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Get profile error:', error);
+      throw error;
+    }
+  }
+
+  // Actualizar perfil del usuario
+  async updateUserProfile(profileData: ProfileUpdateData): Promise<ProfileUpdateResponse> {
+    try {
+      // Primero obtenemos el usuario actual para obtener su username
+      const currentUser = await this.getCurrentUser();
+      if (!currentUser) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      const response = await fetch(`${Environment.apiUrl}/users/profile/${currentUser.username}/`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || errorData.message || 'Error al actualizar el perfil');
+      }
+
+      const data = await response.json();
+      
+      if (Environment.debug) {
+        console.log('Profile updated successfully:', data);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Update profile error:', error);
+      throw error;
+    }
+  }
+
+  // Habilitar 2FA
+  async enable2FA(): Promise<Enable2FAResponse> {
+    try {
+      const response = await fetch(`${Environment.authEndpoint}/2fa/enable/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || errorData.message || 'Error al habilitar 2FA');
+      }
+
+      const data = await response.json();
+      
+      if (Environment.debug) {
+        console.log('2FA enabled successfully:', data);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Enable 2FA error:', error);
+      throw error;
+    }
+  }
+
+  // Verificar código 2FA durante habilitación
+  async verify2FASetup(code: string, password: string): Promise<Verify2FAResponse> {
+    try {
+      // Obtener usuario actual para username
+      const currentUser = await this.getCurrentUser();
+      if (!currentUser) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      const response = await fetch(`${Environment.authEndpoint}/2fa/verify/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: currentUser.username,
+          password: password,
+          code: code
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('2FA verification error response:', errorData);
+        
+        // Proporcionar más detalles sobre el error
+        let errorMessage = 'Código 2FA inválido';
+        if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.code) {
+          errorMessage = `Error en código: ${Array.isArray(errorData.code) ? errorData.code[0] : errorData.code}`;
+        } else if (errorData.non_field_errors) {
+          errorMessage = Array.isArray(errorData.non_field_errors) ? errorData.non_field_errors[0] : errorData.non_field_errors;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      
+      if (Environment.debug) {
+        console.log('2FA verified successfully:', data);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Verify 2FA error:', error);
+      throw error;
+    }
+  }
+
+  // Deshabilitar 2FA
+  async disable2FA(): Promise<DisableTwoFAResponse> {
+    try {
+      const response = await fetch(`${Environment.authEndpoint}/2fa/disable/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || errorData.message || 'Error al deshabilitar 2FA');
+      }
+
+      const data = await response.json();
+      
+      if (Environment.debug) {
+        console.log('2FA disabled successfully:', data);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Disable 2FA error:', error);
+      throw error;
+    }
+  }
 }
 
 const authService = new AuthService();
@@ -265,5 +511,9 @@ export type {
   PasswordChangeResponse, 
   DisableTwoFAResponse,
   RegisterRequest,
-  RegisterResponse
+  RegisterResponse,
+  ProfileUpdateData,
+  ProfileUpdateResponse,
+  Enable2FAResponse,
+  Verify2FAResponse
 };
