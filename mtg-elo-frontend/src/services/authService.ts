@@ -15,6 +15,7 @@ interface User {
   last_name: string;
   is_superuser: boolean;
   is_2fa_enabled: boolean;
+  roles?: string[];
 }
 
 interface TwoFAResponse {

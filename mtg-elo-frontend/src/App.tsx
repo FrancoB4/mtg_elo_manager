@@ -5,8 +5,11 @@ import { HomePage } from './pages/HomePage';
 import { SignIn } from './pages/auth/SignIn';
 import { SignUp } from './pages/auth/SignUp';
 import { PlayersList } from './pages/Players/PlayersList';
+import { TournamentsPage } from './pages/Tournaments';
+import { TournamentDetailPage } from './pages/Tournaments/TournamentDetailPage';
 import { AuthProvider } from './hooks/authHook';
 import authMiddleware from './middlewares/authMiddleware';
+import { ToastContainer } from './components/ui/ToastContainer';
 
 function App(): JSX.Element {
   useEffect(() => {
@@ -32,10 +35,14 @@ function App(): JSX.Element {
               <Route path="/players" element={<PlayersList />} />
               <Route path="/rankings" element={<PlayersList />} />
               <Route path="/rankings/global" element={<PlayersList />} />
+              <Route path="/tournaments" element={<TournamentsPage />} />
+              <Route path="/tournaments/:id" element={<TournamentDetailPage />} />
               <Route path="/tournaments/:id/rankings" element={<PlayersList />} />
               <Route path="/leagues/:id/rankings" element={<PlayersList />} />
             </Routes>
           </main>
+          {/* Toast Container para notificaciones globales */}
+          <ToastContainer />
         </div>
       </Router>
     </AuthProvider>

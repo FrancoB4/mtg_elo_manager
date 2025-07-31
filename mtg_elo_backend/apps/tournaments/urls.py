@@ -5,7 +5,7 @@ from .views import MatchViewSet, TournamentCSVExportView, TournamentViewSet, End
 router = DefaultRouter()
 router.register(r'', TournamentViewSet)
 router.register(r'(?P<tournament_id>[^/.]+)/matches', MatchViewSet, basename='tournament-matches')
-router.register(r'(?P<tournament_name>[^/.]+)/players', TournamentPlayerViewSet, basename='tournament-players')
+router.register(r'(?P<tournament_id>[^/.]+)/players', TournamentPlayerViewSet, basename='tournament-players')
 
 urlpatterns = [
     path('', include(router.urls)),

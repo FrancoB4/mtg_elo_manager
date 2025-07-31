@@ -32,6 +32,25 @@ class PlayerViewSet(viewsets.ModelViewSet):
             permission_classes = [IsLeagueAdmin | IsTournamentAdmin]
             
         return [permission() for permission in permission_classes]
+    
+    
+    def list(self, request, *args, **kwargs):
+        """
+        Handle GET requests for listing players.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        search = request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class GlobalPlayerStatisticsView(generics.GenericAPIView):

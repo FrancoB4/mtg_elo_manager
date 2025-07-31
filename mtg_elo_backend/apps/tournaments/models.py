@@ -6,6 +6,11 @@ from services.helper import Rating, sum_bo3_results
 
 # Create your models here.
 class Tournament(models.Model):
+    class State(models.TextChoices):
+        FINISH = 'FINISHED', 'Finalizado'
+        STARTED = 'STARTED', 'En Progreso'
+        PROGRAMMED = 'PROGRAMMED', 'Programado'
+
     name = models.CharField('name', max_length=35, null=False)
     date = models.DateField('date', null=False, help_text='The date of the tournament.')
     winner = models.ForeignKey(
@@ -18,6 +23,7 @@ class Tournament(models.Model):
         on_delete=models.SET_NULL, null=True,
         related_name='tournaments', help_text='The league to which this tournament belongs.'
     )
+    state = models.CharField(max_length=50, choices=State.choices, default=State.PROGRAMMED, help_text='The current state of the tournament.')
     
     def bulk_dump_to_database(self, ratings: list[Rating] | tuple[Rating]) -> None:
         with transaction.atomic():

@@ -363,5 +363,3 @@ export const PlayersList: React.FC = () => {
     </div>
   );
 };
-
-export default PlayersList;

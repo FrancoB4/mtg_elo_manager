@@ -131,6 +131,7 @@ class PlayersService {
       throw error;
     }
   }
+
 }
 
 export const playersService = new PlayersService();

@@ -49,6 +49,17 @@ class TournamentViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+        
+        players = request.data.get('players', [])
+        if players:
+            tournament = serializer.instance
+            for player_id in players:
+                try:
+                    player = Player.objects.get(id=player_id)
+                    tournament.get_or_create_tournament_rating(player)
+                except Player.DoesNotExist:
+                    return Response({'error': f'Player with id {player_id} does not exist'}, status=404)
+        
         return Response(serializer.data, status=201)
 
 
@@ -143,6 +154,7 @@ class MatchViewSet(viewsets.ModelViewSet):
             filters.append(Q(player1__id=player_id) | Q(player2__id=player_id))
         
         queryset = self.get_queryset().filter(*filters).order_by('-round__tournament__date', '-round__number')
+        
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
@@ -191,15 +203,15 @@ class TournamentPlayerViewSet(viewsets.ModelViewSet):
         List all tournament players.
         """
 
-        tournament_name = kwargs.get('tournament_name', request.query_params.get('tournament_name', None))
+        tournament_id = kwargs.get('tournament_id', request.query_params.get('tournament_id', None))
         player_id = kwargs.get('player_id', request.query_params.get('player_id', None))
         
-        if not tournament_name and not player_id:
-            return Response({'error': 'Either tournament_name or player_id must be provided'}, status=400)
+        if not tournament_id and not player_id:
+            return Response({'error': 'Either tournament_id or player_id must be provided'}, status=400)
 
         filters = []
-        if tournament_name:
-            filters.append(Q(tournament__name=tournament_name))
+        if tournament_id:
+            filters.append(Q(tournament__id=tournament_id))
         if player_id:
             filters.append(Q(player__id=player_id))
         
@@ -213,3 +225,22 @@ class TournamentPlayerViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
 
         return Response(serializer.data)
+    
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new tournament player.
+        """
+        tournament_id = kwargs.get('tournament_id', request.data.get('tournament_id', None))
+        user_id = request.data.get('user_id', None)
+
+        if not tournament_id or not user_id:
+            return Response({'error': 'Both tournament_id and user_id are required'}, status=400)
+
+        try:
+            tournament = Tournament.objects.get(id=tournament_id)
+            player = Player.objects.get(user__id=user_id)
+            tournament_player, created = TournamentPlayer.objects.get_or_create(tournament=tournament, player=player)
+            serializer = self.get_serializer(tournament_player)
+            return Response(serializer.data, status=201 if created else 200)
+        except (Tournament.DoesNotExist, Player.DoesNotExist) as e:
+            return Response({'error': str(e)}, status=404)

@@ -160,6 +160,7 @@ class CustomTokenVerifyView(TokenVerifyView):
                         'username': user.username,
                         'email': user.email,
                         'is_superuser': user.is_superuser,
+                        'roles': [user.base_role]
                     }
                 except (TokenError, InvalidToken, CustomUser.DoesNotExist):
                     pass
